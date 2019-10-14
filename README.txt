@@ -7,9 +7,10 @@ Got Python 3, will build site.
 
 The goal of this project is build a basic static site generator with as few dependencies as possible. Just Python 3 and [Pystache](https://github.com/defunkt/pystache). Here are some of the guiding principals:
 
-2. Screw so-called "lightweight markup languages"
-3. "Embedded frontmatter" is trash
-5. Order and simplicity or die
+1. Screw so-called "lightweight markup languages"
+2. "Embedded frontmatter" is trash
+3. Templates should be free logic
+4. Order and simplicity or die
 
 
 ## Why?
@@ -36,17 +37,106 @@ All "pages" in the source directory each get their own directory. A page directo
 
 ### JSON example
 
-{
-  "title": "My amazing page",
-  "category": "Daily Tech",
-  "tags": ["Web", "JavaScript", "ES6"],
-  "date": "2019-10-01",
-  "author": "John Doe",
-  "custom_attribute", "define extra attributes as required"
-}
+     {
+       "type": "post",
+       "title": "My amazing page",
+       "category": "Daily Tech",
+       "tags": ["Web", "JavaScript", "ES6"],
+       "date": "2019-10-01",
+       "author": "John Doe",
+       "custom_attribute", "define extra attributes as required"
+     }
 
+
+In the above example, `type` is a very important key that specifies which template to use to render the page. In this case, the file `templates/post.mustache` would be used.
 
 
 ## How templates work
 
-Templates in Site Damnit are written with Mustache, but there are a few differences. For example, **I disabled template inheritance** and implemented *infinite loop* detection. 
+Templates in Site Damnit are written with Mustache, but there are a few differences. For example, **Template inheritance is (partial syntax) disabled**. Also, get used to underscores. *Lots* of underscores. Below is a sample template for `base.mustache`:
+
+
+### `base.mustache example`
+
+     <!DOCTYPE html>
+     <html lang="en">
+       <head>
+         <meta charset="utf-8">
+         <title>{{page_title}} | {{site_name}}</title>
+         <meta name="viewport" content="width=device-width, initial-scale=1">
+         <meta name="author" content="">
+         <link rel="stylesheet" href="/css/main.css">
+       </head>
+       <body>
+         {{{page_content}}}
+       </body>
+     </html>
+
+
+Everything starting with `site_` is specified in `config.json`, while everything starting with `page_` is defined in `meta.json`, which is in   `content/<page name>/meta.json`. `page_content` gets the triple mustache treatment because it is supposed to contain pre-compiled HTML. Specifically, the contents of `page.html`. Below is the default directory structure.
+
+
+### Templates directory
+
+     /templates
+     |__index.mustache
+     |__page.mustache
+     |__post.mustache
+     |__post_list.mustache
+     |__base.mustache
+
+
+
+When rendering templates, everything starts with `base.mustache`. After rendering `base.mustache`, `type` is read from `meta.json` to figure out what template to apply on top of `base.mustache`. So, if the `index/page.html` looked like this:
+
+     
+     <h1>Welcome</h1>
+     <p>Welcome to my site! I write about all kinds of stuff here!</p>
+
+
+And `index/meta.json` looked like this:
+
+
+     {
+       "type": "index",
+       "title": "Home"
+     }
+
+
+And `config.json` looked like this:
+
+
+     {
+       "site_name": "Amazing Site",
+       "site_domain": "awesomesauce.com"
+     }
+
+
+
+And if the example `home/index.mustache` looked like this:
+
+
+     <div id="page-content">
+       {{{page_content}}}
+     </div>
+
+
+Then the final output would looke like this:
+
+
+     <!DOCTYPE html>
+     <html lang="en">
+       <head>
+         <meta charset="utf-8">
+         <title>Home | Amazing Site</title>
+         <meta name="viewport" content="width=device-width, initial-scale=1">
+         <meta name="author" content="">
+         <link rel="stylesheet" href="/css/main.css">
+       </head>
+       <body>
+         <div id="page-content">
+           <h1>Welcome</h1>
+           <p>Welcome to my site! I write about all kinds of stuff here!</p>
+         </div>
+       </body>
+     </html>
