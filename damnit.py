@@ -1,7 +1,10 @@
 from datetime import datetime
+from inspect import getsourcefile
+from pathlib import Path
 import pystache
 import sys
 import os
+import shutil
 
 
 ### Variables ###
@@ -10,7 +13,10 @@ VERSION = "Version 0.0.1"
 
 # Get the current working directory
 CWD = os.getcwd()
-
+PROG_HOME = Path(os.path.abspath(getsourcefile(lambda:0))).parent
+print(PROG_HOME)
+DATA_DIR = os.path.join(PROG_HOME, "res")
+print(DATA_DIR)
 
 
 
@@ -83,6 +89,11 @@ def new_site_directory(p):
         # Make the required directories
         os.makedirs("content")
         os.makedirs("output")
+
+        # Copy config file
+        src = os.path.join(DATA_DIR, "config.json")
+        dst = os.path.join(CWD, "config.json")
+        shutil.copyfile(src, dst)
 
 
 def new_site(p=""):
