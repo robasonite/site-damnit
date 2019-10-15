@@ -57,6 +57,9 @@ def input_handler(help_text, version):
             else:
                 new_site()
             
+        elif (args[1] == "build"):
+            print("'build' command")
+
         elif (args[1] == "list"):
             print("'link' command")
 
@@ -70,43 +73,39 @@ def input_handler(help_text, version):
 
 ### Site generation functions ###
 
-# Make the new site directory
-def new_site_directory(p):
+
+def new_site(p=""):
     """
     Attempts to set up a new project directory at the specified path.
     If the directory already exists, it displays an error and does nothing.
     """
-    if os.path.exists(p):
-        print("Path '{}' exists!".format(p))
-        print("Process aborted")
-
-    # Try to make the directories
-    else:
-        os.makedirs(p)
-        os.chdir(p)
-        CWD = os.getcwd()
-
-        # Make the required directories
-        os.makedirs("content")
-        os.makedirs("output")
-
-        # Copy config file
-        src = os.path.join(DATA_DIR, "config.json")
-        dst = os.path.join(CWD, "config.json")
-        shutil.copyfile(src, dst)
-
-
-def new_site(p=""):
-    """ Generates a new project directory at the specified path """
     # If the target directory is not specified, tell the user
     if p == "":
         print("You need to specifiy a location!")
 
     # Else, append the path the user provided to CWD
     else:
-        print("Generating a new project in '{}'".format(p))
-        new_site_directory(p)
-        print("Done!")
+        if os.path.exists(p):
+            print("Path '{}' exists!".format(p))
+            print("Process aborted")
+
+        # Try to make the directories
+        else:
+            print("Generating a new project in '{}'".format(p))
+            os.makedirs(p)
+            os.chdir(p)
+            CWD = os.getcwd()
+
+            # Make the required directories
+            os.makedirs("content")
+            os.makedirs("output")
+            os.makedirs("templates")
+
+            # Copy config file
+            src = os.path.join(DATA_DIR, "config.json")
+            dst = os.path.join(CWD, "config.json")
+            shutil.copyfile(src, dst)
+            print("Done!")
 
 
 
