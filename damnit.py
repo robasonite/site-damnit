@@ -127,19 +127,19 @@ def build_site():
 
         # Next, try to dive into the 'content' directory
         for filename in glob.iglob("content" + '**/*', recursive=True):
-            meta_file = os.path.join(filename, "meta.json")
+            vars_file = os.path.join(filename, "vars.json")
             content_file = os.path.join(filename, "page.html")
 
             # If a file is missing or can not be read, don't try to process it
             skip_file = False
 
-            # Try to read the meta file
-            if os.access(meta_file, os.R_OK):
-                with open(meta_file) as m:
-                    page_meta = json.load(m)
+            # Try to read the variables file
+            if os.access(vars_file, os.R_OK):
+                with open(vars_file) as m:
+                    page_vars = json.load(m)
 
             else:
-                print("File '{}' is missing or can not be read!".format(meta_file))
+                print("File '{}' is missing or can not be read!".format(vars_file))
                 skip_file = True
 
             # Try to get the page contents
@@ -157,7 +157,7 @@ def build_site():
                 print("Processing '{}'".format(filename))
 
                 # The page building function all of the data it needs
-                build_page(SITE_CONF, page_meta, page_content)
+                build_page(SITE_CONF, page_vars, page_content)
             else:
                 print("Skipping '{}'".format(filename))
 
@@ -170,9 +170,13 @@ def build_site():
     # Print JSON to see if it's working
     # print(SITE_CONF)
 
-def build_page(site_conf, meta, content):
+
+def build_page(site_conf, page_vars, content):
+    """ Build a page using template specified in 'page_vars', and information
+    from 'site_conf' and 'page_vars'.
+    """
     # Get the template page name
-    template_name = "{}.mustache".format(meta['template'])
+    template_name = "{}.mustache".format(page_vars['template'])
     base_template_name = "base.mustache"
 
     # Check the required templates
@@ -199,11 +203,11 @@ def build_page(site_conf, meta, content):
         # Create a combined object for rendering
         combo_vars = {}
 
-        for k in meta:
+        for k in page_vars:
 
             # Rename the keys to match patch page variable
             key_name = "page_" + str(k)
-            combo_vars[key_name] = meta[k]
+            combo_vars[key_name] = page_vars[k]
 
         # Add the site variables
         for c in site_conf:
@@ -211,7 +215,7 @@ def build_page(site_conf, meta, content):
 
         # See what we have so far
         #print(combo_vars)
-        #print(meta)
+        #print(page_vars)
 
         # Step 1: render page content
         combo_vars['page_content'] = content
