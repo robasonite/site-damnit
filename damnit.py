@@ -77,7 +77,6 @@ def input_handler(help_text, version):
 
 ### Site generation functions ###
 
-
 def new_site(p=""):
     """
     Attempts to set up a new project directory at the specified path.
@@ -156,6 +155,9 @@ def build_site():
             if skip_file == False:
                 # Stuff
                 print("Processing '{}'".format(filename))
+
+                # The page building function all of the data it needs
+                build_page(SITE_CONF, page_meta, page_content)
             else:
                 print("Skipping '{}'".format(filename))
 
@@ -168,5 +170,42 @@ def build_site():
     # Print JSON to see if it's working
     # print(SITE_CONF)
 
+def build_page(site_conf, meta, content):
+    # Get the template page name
+    template_name = "{}.mustache".format(meta['template'])
 
+    # Try to find that template in the templates directory
+    if os.access(os.path.join("templates", template_name), os.R_OK):
+        with open(os.path.join("templates", template_name)) as pt:
+            page_template = pt.read();
+
+        # Create a combined object for rendering
+        combo_vars = {}
+
+        for k in meta:
+
+            # Rename the keys to match patch page variable
+            key_name = "page_" + str(k)
+            combo_vars[key_name] = meta[k]
+
+        # Add the site variables
+        for c in site_conf:
+            combo_vars[c] = site_conf[c]
+
+        # See what we have so far
+        #print(combo_vars)
+        #print(meta)
+
+        # Step 1: render page content
+        combo_vars['page_content'] = content
+        rendered_contents = pystache.render(page_template, combo_vars)
+        print(rendered_contents)
+
+    # If the page template can not be found, tell the user
+    else:
+        print("Template '{}' not found! Skipping....".format(template_name))
+
+
+
+# Run program
 input_handler(HELP_TXT, VERSION)
