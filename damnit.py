@@ -1,13 +1,17 @@
 from datetime import datetime
 from inspect import getsourcefile
 from pathlib import Path
+from distutils.dir_util import copy_tree
 import pystache
 import sys
 import os
 import shutil
+import json
+import glob
 
 
 ### Variables ###
+SITE_CONF = {}
 HELP_TXT = "Help text here"
 VERSION = "Version 0.0.1"
 
@@ -58,7 +62,7 @@ def input_handler(help_text, version):
                 new_site()
             
         elif (args[1] == "build"):
-            print("'build' command")
+            build_site()
 
         elif (args[1] == "list"):
             print("'link' command")
@@ -101,13 +105,68 @@ def new_site(p=""):
             os.makedirs("output")
             os.makedirs("templates")
 
-            # Copy config file
-            src = os.path.join(DATA_DIR, "config.json")
-            dst = os.path.join(CWD, "config.json")
-            shutil.copyfile(src, dst)
+            # Copy resource files
+            src = DATA_DIR
+            dst = CWD
+            copy_tree(src, dst)
             print("Done!")
 
 
+def build_site():
+    global SITE_CONF
+    """ Iterate over files the content directory """
+
+    # First make sure that the current directory contains a file called
+    # 'config.json' and that we can read it.
+    if os.access("config.json", os.R_OK):
+
+        # Try to load the file
+        with open("config.json") as f:
+
+            # Assign the file to the global config
+            SITE_CONF = json.load(f)
+
+        # Next, try to dive into the 'content' directory
+        for filename in glob.iglob("content" + '**/*', recursive=True):
+            meta_file = os.path.join(filename, "meta.json")
+            content_file = os.path.join(filename, "page.html")
+
+            # If a file is missing or can not be read, don't try to process it
+            skip_file = False
+
+            # Try to read the meta file
+            if os.access(meta_file, os.R_OK):
+                with open(meta_file) as m:
+                    page_meta = json.load(m)
+
+            else:
+                print("File '{}' is missing or can not be read!".format(meta_file))
+                skip_file = True
+
+            # Try to get the page contents
+            if os.access(content_file, os.R_OK):
+                with open(content_file) as c:
+                    page_content = c.read()
+
+            else:
+                print("File '{}' is missing or can not be read!".format(content_file))
+                skip_file = True
+
+            # If we're still good, process the page
+            if skip_file == False:
+                # Stuff
+                print("Processing '{}'".format(filename))
+            else:
+                print("Skipping '{}'".format(filename))
+
+            print(filename)
+
+    else:
+        print("Config file does not exist! Aborting...")
+
+
+    # Print JSON to see if it's working
+    # print(SITE_CONF)
 
 
 input_handler(HELP_TXT, VERSION)
