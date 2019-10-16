@@ -175,17 +175,27 @@ def build_page(site_conf, meta, content):
     template_name = "{}.mustache".format(meta['template'])
     base_template_name = "base.mustache"
 
-    # Try to find that template in the templates directory
+    # Check the required templates
+    template_ok = True
     if os.access(os.path.join("templates", template_name), os.R_OK):
 
         # Grab the page template contents
         with open(os.path.join("templates", template_name)) as pt:
             page_template = pt.read();
+    else:
+        template_ok = False
+        failed_template = os.path.join("templates", template_name)
 
+    if os.access(os.path.join("templates", base_template_name), os.R_OK):
         # Grab the base template contents
         with open(os.path.join("templates", base_template_name)) as base:
             base_template = base.read();
+    else:
+        template_ok = False
+        failed_template = os.path.join("templates", base_template_name)
 
+    # If we're still good, render the page
+    if template_ok == True:
         # Create a combined object for rendering
         combo_vars = {}
 
