@@ -173,11 +173,18 @@ def build_site():
 def build_page(site_conf, meta, content):
     # Get the template page name
     template_name = "{}.mustache".format(meta['template'])
+    base_template_name = "base.mustache"
 
     # Try to find that template in the templates directory
     if os.access(os.path.join("templates", template_name), os.R_OK):
+
+        # Grab the page template contents
         with open(os.path.join("templates", template_name)) as pt:
             page_template = pt.read();
+
+        # Grab the base template contents
+        with open(os.path.join("templates", base_template_name)) as base:
+            base_template = base.read();
 
         # Create a combined object for rendering
         combo_vars = {}
@@ -199,7 +206,13 @@ def build_page(site_conf, meta, content):
         # Step 1: render page content
         combo_vars['page_content'] = content
         rendered_contents = pystache.render(page_template, combo_vars)
+        #print(rendered_contents)
+
+        # Step 2: render with 'base.mustache'
+        combo_vars['page_content'] = rendered_contents
+        rendered_contents = pystache.render(base_template, combo_vars)
         print(rendered_contents)
+
 
     # If the page template can not be found, tell the user
     else:
