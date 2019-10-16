@@ -126,9 +126,12 @@ def build_site():
             SITE_CONF = json.load(f)
 
         # Next, try to dive into the 'content' directory
-        for filename in glob.iglob("content" + '**/*', recursive=True):
-            vars_file = os.path.join(filename, "vars.json")
-            content_file = os.path.join(filename, "page.html")
+        for root, dirs, files in os.walk("content"):
+            path = root.split(os.sep)
+
+            # Specify the files we're looking for
+            vars_file = os.path.join(root, "vars.json")
+            content_file = os.path.join(root, "page.html")
 
             # If a file is missing or can not be read, don't try to process it
             skip_file = False
@@ -137,6 +140,21 @@ def build_site():
             if os.access(vars_file, os.R_OK):
                 with open(vars_file) as m:
                     page_vars = json.load(m)
+
+                # Also need to check if 'page_vars' has a path specified.
+                # If not, generate it
+                if "page_path" not in page_vars:
+
+                    # Need know whether the domain should be appended
+                    if SITE_CONF['site_config_absolute_urls'] == True:
+                        p_path = SITE_CONF['site_domain'] + "/" + root + ".html"
+
+                    else:
+                        p_path = "/" + root + ".html"
+
+                    page_vars['page_path'] = p_path
+
+                print(page_vars)
 
             else:
                 print("File '{}' is missing or can not be read!".format(vars_file))
@@ -153,15 +171,18 @@ def build_site():
 
             # If we're still good, process the page
             if skip_file == False:
-                # Stuff
-                print("Processing '{}'".format(filename))
+                # Collect page contents and metadata before anything else
+                #collect_page(SITE_CONF, page_vars, page_content, page_path)
+                
+                print("Processing '{}'".format(root))
 
                 # The page building function all of the data it needs
-                build_page(SITE_CONF, page_vars, page_content)
+                #build_page(SITE_CONF, page_vars, page_content)
             else:
-                print("Skipping '{}'".format(filename))
+                print("Skipping '{}'".format(root))
 
-            print(filename)
+
+            print(root)
 
     else:
         print("Config file does not exist! Aborting...")
