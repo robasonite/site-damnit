@@ -12,6 +12,7 @@ import glob
 
 ### Variables ###
 SITE_CONF = {}
+PAGE_COLLECTION = []
 HELP_TXT = "Help text here"
 VERSION = "Version 0.0.1"
 
@@ -113,6 +114,7 @@ def new_site(p=""):
 
 def build_site():
     global SITE_CONF
+    global PAGE_COLLECTION
     """ Iterate over files the content directory """
 
     # First make sure that the current directory contains a file called
@@ -141,18 +143,26 @@ def build_site():
                 with open(vars_file) as m:
                     page_vars = json.load(m)
 
+                # Remove 'content' from the page path
+                path.pop(0)
+                sep = "{}".format(os.sep)
+                new_path = sep.join(path)
+                print("New path: {}".format(new_path))
                 # Also need to check if 'page_vars' has a path specified.
                 # If not, generate it
                 if "page_path" not in page_vars:
 
                     # Need know whether the domain should be appended
                     if SITE_CONF['site_config_absolute_urls'] == True:
-                        p_path = SITE_CONF['site_domain'] + "/" + root + ".html"
+                        p_path = SITE_CONF['site_domain'] + "/" + new_path + ".html"
 
                     else:
-                        p_path = "/" + root + ".html"
+                        p_path = "/" + new_path + ".html"
 
                     page_vars['page_path'] = p_path
+
+                # Output path won't be in page_vars by default
+                page_vars['page_output_path'] = "output/" + new_path + ".html"
 
                 print(page_vars)
 
@@ -171,10 +181,11 @@ def build_site():
 
             # If we're still good, process the page
             if skip_file == False:
-                # Collect page contents and metadata before anything else
-                #collect_page(SITE_CONF, page_vars, page_content, page_path)
-                
                 print("Processing '{}'".format(root))
+                
+                # Collect page contents and metadata before anything else
+                collect_page(page_vars, page_content)
+                
 
                 # The page building function all of the data it needs
                 #build_page(SITE_CONF, page_vars, page_content)
@@ -183,6 +194,14 @@ def build_site():
 
 
             print(root)
+        
+        # Print the collection to see where we're at
+        print(PAGE_COLLECTION)
+
+        # Before going any further, we need to create the output directory
+        if not os.path.exists('output'):
+            os.makedirs('output')
+
 
     else:
         print("Config file does not exist! Aborting...")
@@ -190,6 +209,22 @@ def build_site():
 
     # Print JSON to see if it's working
     # print(SITE_CONF)
+
+
+def collect_page(page_vars, page_content):
+    global PAGE_COLLECTION
+    """ 
+    Collects the contents of a page and it's variables into a dictionary, which
+    is then added to PAGE_COLLECTION.
+    """
+
+    # Create a new dict to hold the data
+    pg_dict = {}
+    pg_dict['page_vars'] = page_vars
+    pg_dict['page_content'] = page_content
+
+    # Add to the page
+    PAGE_COLLECTION.append(pg_dict)
 
 
 def build_page(site_conf, page_vars, content):
