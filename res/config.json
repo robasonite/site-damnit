@@ -1,4 +1,5 @@
 {
   "site_name": "Your site name here",
-  "site_domain": "awesomesauce.com"
+  "site_domain": "http://awesomesauce.com",
+  "site_config_absolute_urls": false
 }
