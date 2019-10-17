@@ -13,8 +13,11 @@ import glob
 ### Variables ###
 SITE_CONF = {}
 PAGE_COLLECTION = []
-HELP_TXT = "Help text here"
-VERSION = "Version 0.0.1"
+HELP_TXT = """
+- build    Builds the website project located in the current directory
+- new      Creates a new project at the specified path
+"""
+VERSION = "Version 0.0.2"
 
 # Get the current working directory
 CWD = os.getcwd()
