@@ -187,8 +187,6 @@ def build_site():
                 collect_page(page_vars, page_content)
                 
 
-                # The page building function all of the data it needs
-                #build_page(SITE_CONF, page_vars, page_content)
             else:
                 print("Skipping '{}'".format(root))
 
@@ -201,6 +199,17 @@ def build_site():
         # Before going any further, we need to create the output directory
         if not os.path.exists('output'):
             os.makedirs('output')
+
+        # Check to see if the directory is writable
+        if os.access('output', os.W_OK):
+            # Build pages
+            return False
+        else:
+            print("Output directory can not be written to!")
+            print("""
+            Please adjust permissions on the directory (or delete it)
+            and try again.
+            """)
 
 
     else:
