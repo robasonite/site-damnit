@@ -159,12 +159,23 @@ def build_site():
                     else:
                         p_path = "/" + new_path + ".html"
 
-                    page_vars['page_path'] = p_path
+                    page_vars['path'] = p_path
 
                 # Output path won't be in page_vars by default
-                page_vars['page_output_path'] = "output/" + new_path + ".html"
+                f_name = path.pop(-1)
+                new_path = sep.join(path)
 
-                print(page_vars)
+                # Make sure output path never ends in 'os.sep'
+                if new_path != "":
+                    page_vars['output_path'] = "output" + sep + new_path
+                else:
+                    page_vars['output_path'] = "output"
+
+                # Neither will filename
+                page_vars['file_name'] = f_name + ".html"
+
+
+                #print(page_vars)
 
             else:
                 print("File '{}' is missing or can not be read!".format(vars_file))
@@ -202,14 +213,14 @@ def build_site():
 
         # Check to see if the directory is writable
         if os.access('output', os.W_OK):
+            
             # Build pages
-            return False
+            for page in PAGE_COLLECTION:
+                build_page(SITE_CONF, page['page_vars'], page['page_content'])
+                #print(page)
         else:
             print("Output directory can not be written to!")
-            print("""
-            Please adjust permissions on the directory (or delete it)
-            and try again.
-            """)
+            print("Please adjust permissions on the directory (or delete it) and try again.")
 
 
     else:
@@ -270,7 +281,7 @@ def build_page(site_conf, page_vars, content):
 
         for k in page_vars:
 
-            # Rename the keys to match patch page variable
+            # Rename the keys to match page variable
             key_name = "page_" + str(k)
             combo_vars[key_name] = page_vars[k]
 
@@ -290,10 +301,21 @@ def build_page(site_conf, page_vars, content):
         # Step 2: render with 'base.mustache'
         combo_vars['page_content'] = rendered_contents
         rendered_contents = pystache.render(base_template, combo_vars)
-        print(rendered_contents)
+        #print(rendered_contents)
+
+        # Need to write the page. This is where Pathlib really shines.
+        Path(combo_vars['page_output_path']).mkdir(parents=True, exist_ok=True)
+
+        # Now try to write the page
+        page_target = os.path.join(combo_vars['page_output_path'], combo_vars['page_file_name']) 
+        with open(page_target, 'w') as p:
+            p.write(rendered_contents)
 
 
-    # If the page template can not be found, tell the user
+
+
+
+    # If the page template can not be found, tell the user.
     else:
         print("Template '{}' not found! Skipping....".format(template_name))
 
