@@ -153,7 +153,7 @@ def build_site():
                 print("New path: {}".format(new_path))
                 # Also need to check if 'page_vars' has a path specified.
                 # If not, generate it
-                if "page_path" not in page_vars:
+                if "path" not in page_vars:
 
                     # Need know whether the domain should be appended
                     if SITE_CONF['site_config_absolute_urls'] == True:
@@ -163,6 +163,22 @@ def build_site():
                         p_path = "/" + new_path + ".html"
 
                     page_vars['path'] = p_path
+
+                # Tag handling
+                if "tags" in page_vars:
+                    page_vars["has_tags"] = True
+
+                    # Convert tags into a format for adding additional
+                    # functionality
+                    new_tags = []
+                    for x in page_vars["tags"]:
+                        new_tags.append({"name": x})
+                    
+                    page_vars["tags"] = new_tags
+
+                # Date time handling
+                if "datetime" in page_vars:
+                    page_vars["has_datetime"] = True
 
                 # Output path won't be in page_vars by default
                 f_name = path.pop(-1)
