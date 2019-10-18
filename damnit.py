@@ -13,6 +13,7 @@ import glob
 ### Variables ###
 SITE_CONF = {}
 PAGE_COLLECTION = []
+PAGE_TAGS = []
 HELP_TXT = """
 - build    Builds the website project located in the current directory
 - new      Creates a new project at the specified path
@@ -22,9 +23,9 @@ VERSION = "Version 0.0.2"
 # Get the current working directory
 CWD = os.getcwd()
 PROG_HOME = Path(os.path.abspath(getsourcefile(lambda:0))).parent
-print(PROG_HOME)
+#print(PROG_HOME)
 DATA_DIR = os.path.join(PROG_HOME, "res")
-print(DATA_DIR)
+#print(DATA_DIR)
 
 
 
@@ -82,10 +83,8 @@ def input_handler(help_text, version):
 ### Site generation functions ###
 
 def new_site(p=""):
-    """
-    Attempts to set up a new project directory at the specified path.
-    If the directory already exists, it displays an error and does nothing.
-    """
+    """Attempts to set up a new project directory at the specified path.
+    If the directory already exists, it displays an error and does nothing."""
     # If the target directory is not specified, tell the user
     if p == "":
         print("You need to specifiy a location!")
@@ -118,7 +117,8 @@ def new_site(p=""):
 def build_site():
     global SITE_CONF
     global PAGE_COLLECTION
-    """ Iterate over files the content directory """
+    """Iterate over files in the 'content' directory and generate appropriate
+    in the 'output' directory."""
 
     # First make sure that the current directory contains a file called
     # 'config.json' and that we can read it.
@@ -151,9 +151,9 @@ def build_site():
                 sep = "{}".format(os.sep)
                 new_path = sep.join(path)
                 print("New path: {}".format(new_path))
-                # Also need to check if 'page_vars' has a path specified.
-                # If not, generate it
-                if "path" not in page_vars:
+                # Also need to check if 'page_vars' has a url specified
+                # If not, generate one
+                if "url" not in page_vars:
 
                     # Need know whether the domain should be appended
                     if SITE_CONF['site_config_absolute_urls'] == True:
@@ -162,7 +162,7 @@ def build_site():
                     else:
                         p_path = "/" + new_path + ".html"
 
-                    page_vars['path'] = p_path
+                    page_vars['url'] = p_path
 
                 # Tag handling
                 if "tags" in page_vars:
@@ -224,7 +224,7 @@ def build_site():
             print(root)
         
         # Print the collection to see where we're at
-        print(PAGE_COLLECTION)
+        #print(PAGE_COLLECTION)
 
         # Before going any further, we need to create the output directory
         if not os.path.exists('output'):
@@ -232,11 +232,15 @@ def build_site():
 
         # Check to see if the directory is writable
         if os.access('output', os.W_OK):
+            # Generate the tag pages
+            build_tag_pages(SITE_CONF, PAGE_COLLECTION)
             
             # Build pages
             for page in PAGE_COLLECTION:
                 build_page(SITE_CONF, page['page_vars'], page['page_content'])
                 #print(page)
+
+
         else:
             print("Output directory can not be written to!")
             print("Please adjust permissions on the directory (or delete it) and try again.")
@@ -249,13 +253,50 @@ def build_site():
     # Print JSON to see if it's working
     # print(SITE_CONF)
 
+def collect_page_tags(page_vars):
+    """Scans page variables and adds tags to the global PAGE_TAGS variable."""
+    global PAGE_TAGS
+    #print(page_vars)
+
+    # Iterate over the tags
+    for tag in page_vars['tags']:
+        print(tag)
+
+        # Need this to prevent repeating code
+        add_tag = False
+
+        # Case 1: PAGE_TAGS is empty
+        if len(PAGE_TAGS) == 0:
+            add_tag = True
+
+        else:
+            # Iterate over PAGE_TAGS
+            for PT in PAGE_TAGS:
+
+                # Check each of the tags in page_vars
+                if tag['name'] == PT['name']:
+
+                    # Increment if so
+                    PT['count'] += 1
+                else:
+                    # Add the tag if not
+                    add_tag = True
+
+        # If the tag doesn't exist, create it
+        if add_tag == True:
+            new_pt = {}
+            new_pt['name'] = tag['name']
+            new_pt['count'] = 1
+            new_pt['url'] = page_vars['url']
+            PAGE_TAGS.append(new_pt)
+
+
+
 
 def collect_page(page_vars, page_content):
     global PAGE_COLLECTION
-    """ 
-    Collects the contents of a page and it's variables into a dictionary, which
-    is then added to PAGE_COLLECTION.
-    """
+    """Collects the contents of a page and it's variables into a dictionary, which
+    is then added to PAGE_COLLECTION."""
 
     # Create a new dict to hold the data
     pg_dict = {}
@@ -267,8 +308,12 @@ def collect_page(page_vars, page_content):
 
 
 def build_page(site_conf, page_vars, content):
-    """ Build a page using template specified in 'page_vars', and information
-    from 'site_conf' and 'page_vars'.
+    """Build a page using template specified in 'page_vars', and information from 'site_conf' and 'page_vars'.
+    
+    Arguments:
+    site_conf -- Pass the global SITE_CONF variable.
+    page_vars -- Variables specified in 'var.json' for the given page.
+    content   -- The contents of 'page.html' for a given page.
     """
     # Get the template page name
     template_name = "{}.mustache".format(page_vars['template'])
@@ -331,13 +376,61 @@ def build_page(site_conf, page_vars, content):
             p.write(rendered_contents)
 
 
-
-
-
     # If the page template can not be found, tell the user.
     else:
         print("Template '{}' not found! Skipping....".format(template_name))
 
+
+def build_tag_pages(site_conf, page_collection):
+    """Builds tag pages in 'output/tags/<tag_name>', and the main 'output/tags.html' list page.
+
+    Arguments:
+    site_conf -- The globe SITE_CONF variable.
+    page_collection -- The globe PAGE_COLLECTION variable.
+
+    Required templates:
+    tag_list_page.mustache
+    tag_page.mustache
+    page_list_item.mustache
+    """
+    global PAGE_TAGS
+
+    # Start by looking for the right templates
+    templates_ok = True
+    tag_list_template_name = "tag_list_page.mustache"
+    tag_page_template_name = "tag_page.mustache"
+    page_list_item_template_name = "page_list_item.mustache"
+    if not os.access(os.path.join("templates", tag_list_template_name), os.R_OK):
+
+    # Tell the user what went wrong
+        print("Template '{}' not found!".format(tag_list_template_name))
+        templates_ok = False
+
+    if not os.access(os.path.join("templates", tag_page_template_name), os.R_OK):
+        print("Template '{}' not found!".format(tag_page_template_name))
+        templates_ok = False
+    
+    if not os.access(os.path.join("templates", page_list_item_template_name), os.R_OK):
+        print("Template '{}' not found!".format(page_list_item_template_name))
+        templates_ok = False
+
+    if templates_ok:
+        # Collect the tags
+        #print(PAGE_COLLECTION)
+
+        for page in page_collection:
+
+            page_vars = page['page_vars']
+            # Make sure the page has tags to avoid errors
+            if 'tags' in page_vars.keys():
+                collect_page_tags(page_vars)
+
+        # Take a look at PAGE_TAGS and see what happened
+        print(PAGE_TAGS)
+
+    else:
+        print("Unable to generate tag pages!")
+    
 
 
 # Run program
