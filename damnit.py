@@ -152,32 +152,32 @@ def build_site():
                 print("New path: {}".format(new_path))
                 # Also need to check if 'page_vars' has a url specified
                 # If not, generate one
-                if "url" not in page_vars:
+                if "page_url" not in page_vars:
 
                     # Need know whether the domain should be appended
-                    if SITE_CONF['site_config_absolute_urls'] == True:
+                    if SITE_CONF["site_config_absolute_urls"] == True:
                         p_path = SITE_CONF['site_domain'] + "/" + new_path + ".html"
 
                     else:
                         p_path = "/" + new_path + ".html"
 
-                    page_vars['url'] = p_path
+                    page_vars["page_url"] = p_path
 
                 # Tag handling
-                if "tags" in page_vars:
-                    page_vars["has_tags"] = True
+                if "page_tags" in page_vars:
+                    page_vars["page_has_tags"] = True
 
                     # Convert tags into a format for adding additional
                     # functionality
                     new_tags = []
-                    for x in page_vars["tags"]:
+                    for x in page_vars["page_tags"]:
                         new_tags.append({"name": x})
                     
-                    page_vars["tags"] = new_tags
+                    page_vars["page_tags"] = new_tags
 
                 # Date time handling
-                if "datetime" in page_vars:
-                    page_vars["has_datetime"] = True
+                if "page_datetime" in page_vars:
+                    page_vars["page_has_datetime"] = True
 
                 # Output path won't be in page_vars by default
                 f_name = path.pop(-1)
@@ -185,15 +185,16 @@ def build_site():
 
                 # Make sure output path never ends in 'os.sep'
                 if new_path != "":
-                    page_vars['output_path'] = "output" + sep + new_path
+                    page_vars['page_output_path'] = "output" + sep + new_path
                 else:
-                    page_vars['output_path'] = "output"
+                    page_vars['page_output_path'] = "output"
 
                 # Neither will filename
-                page_vars['file_name'] = f_name + ".html"
+                page_vars['page_file_name'] = f_name + ".html"
 
 
                 #print(page_vars)
+
 
             else:
                 print("File '{}' is missing or can not be read!".format(vars_file))
@@ -258,7 +259,7 @@ def collect_page_tags(page_vars):
     #print(page_vars)
 
     # Iterate over the tags
-    for tag in page_vars['tags']:
+    for tag in page_vars['page_tags']:
         print(tag)
 
         # Need this to prevent repeating code
@@ -326,7 +327,7 @@ def build_page(site_conf, page_vars, content):
     content   -- The contents of 'page.html' for a given page.
     """
     # Get the template page name
-    template_name = "{}.mustache".format(page_vars['template'])
+    template_name = "{}.mustache".format(page_vars['page_template'])
     base_template_name = "base.mustache"
 
     # Check the required templates
@@ -354,10 +355,7 @@ def build_page(site_conf, page_vars, content):
         combo_vars = {}
 
         for k in page_vars:
-
-            # Rename the keys to match page variable
-            key_name = "page_" + str(k)
-            combo_vars[key_name] = page_vars[k]
+            combo_vars[k] = page_vars[k]
 
         # Add the site variables
         for c in site_conf:
@@ -419,8 +417,14 @@ def build_tag_pages(site_conf, page_collection):
     if not os.access(os.path.join("templates", tag_page_template_name + ".mustache"), os.R_OK):
         print("Template '{}' not found!".format(tag_page_template_name))
         templates_ok = False
-    
-    if not os.access(os.path.join("templates", page_list_item_template_name + ".mustache"), os.R_OK):
+   
+    # This is the ONLY template file that must be opened and read within this
+    # function.
+    if os.access(os.path.join("templates", page_list_item_template_name + ".mustache"), os.R_OK):
+        with open(os.path.join("templates", page_list_item_template_name + ".mustache")) as t:
+            page_list_item_template = t.read()
+
+    else:
         print("Template '{}' not found!".format(page_list_item_template_name))
         templates_ok = False
 
@@ -432,11 +436,11 @@ def build_tag_pages(site_conf, page_collection):
 
             page_vars = page['page_vars']
             # Make sure the page has tags to avoid errors
-            if 'tags' in page_vars.keys():
+            if 'page_tags' in page_vars.keys():
                 collect_page_tags(page_vars)
 
         # Take a look at PAGE_TAGS and see what happened
-        print(SITE_CONF)
+        #print(SITE_CONF)
 
         # Now generate the main tags.html page
 
@@ -446,12 +450,39 @@ def build_tag_pages(site_conf, page_collection):
 
         # Need to build page variables to use build_page()
         page_vars = {}
-        page_vars['title'] = "Tags"
-        page_vars['template'] = tag_list_template_name
-        page_vars['output_path'] = ""
-        page_vars['file_name'] = "tags.html"
+        page_vars['page_title'] = "Tags"
+        page_vars['page_template'] = tag_list_template_name
+        page_vars['page_output_path'] = "output"
+        page_vars['page_file_name'] = "tags.html"
         build_page(site_conf, page_vars, "")
 
+        # Now for the crazy part: Getting the individual tag pages to generate
+        for tag in SITE_CONF['site_tags']:
+            page_vars['page_title'] = tag['tag_name']
+            page_vars['page_template'] = tag_page_template_name
+            page_vars['page_output_path'] = "output/tags"
+            page_vars['page_file_name'] = tag['tag_name'] + ".html"
+
+            # Need to generate some pre-rendered content
+            page_list = []
+
+            # Search all pages for the current tag and add them to the page
+            # list.
+            for page in PAGE_COLLECTION:
+                if 'page_tags' in page['page_vars']: 
+                    for pt in page['page_vars']['page_tags']:
+                        if pt['name'] == tag['tag_name']:
+                            page_list.append(page)
+
+            # Render the pages
+            content = ""
+            for p in page_list:
+                content += pystache.render(page_list_item_template, p['page_vars'])
+            
+            page_vars['tag_page_list'] = content
+            page_vars['tag_name'] = tag['tag_name']
+            build_page(SITE_CONF, page_vars, "")
+            
 
 
     else:
