@@ -13,7 +13,6 @@ import glob
 ### Variables ###
 SITE_CONF = {}
 PAGE_COLLECTION = []
-PAGE_TAGS = []
 HELP_TXT = """
 - build    Builds the website project located in the current directory
 - new      Creates a new project at the specified path
@@ -255,7 +254,7 @@ def build_site():
 
 def collect_page_tags(page_vars):
     """Scans page variables and adds tags to the global PAGE_TAGS variable."""
-    global PAGE_TAGS
+    SITE_TAGS = []
     #print(page_vars)
 
     # Iterate over the tags
@@ -266,18 +265,18 @@ def collect_page_tags(page_vars):
         add_tag = False
 
         # Case 1: PAGE_TAGS is empty
-        if len(PAGE_TAGS) == 0:
+        if len(SITE_TAGS) == 0:
             add_tag = True
 
         else:
             # Iterate over PAGE_TAGS
-            for PT in PAGE_TAGS:
+            for ST in SITE_TAGS:
 
                 # Check each of the tags in page_vars
-                if tag['name'] == PT['name']:
+                if tag['name'] == ST['tag_name']:
 
                     # Increment if so
-                    PT['count'] += 1
+                    ST['tag_count'] += 1
                 else:
                     # Add the tag if not
                     add_tag = True
@@ -285,11 +284,22 @@ def collect_page_tags(page_vars):
         # If the tag doesn't exist, create it
         if add_tag == True:
             new_pt = {}
-            new_pt['name'] = tag['name']
-            new_pt['count'] = 1
-            new_pt['url'] = page_vars['url']
-            PAGE_TAGS.append(new_pt)
+            new_pt['tag_name'] = tag['name']
+            new_pt['tag_count'] = 1
 
+            # Need know whether the domain should be appended
+            if SITE_CONF['site_config_absolute_urls'] == True:
+                p_path = SITE_CONF['site_domain'] + "/tags/" + new_pt['tag_name'] + ".html"
+
+            else:
+                p_path = "/tags/" + new_pt['tag_name'] + ".html"
+
+            new_pt['tag_page_url'] = p_path
+
+            SITE_TAGS.append(new_pt)
+    
+    # Add PAGE_TAGS to SITE_CONF
+    SITE_CONF['site_tags'] = SITE_TAGS
 
 
 
@@ -333,7 +343,7 @@ def build_page(site_conf, page_vars, content):
     if os.access(os.path.join("templates", base_template_name), os.R_OK):
         # Grab the base template contents
         with open(os.path.join("templates", base_template_name)) as base:
-            base_template = base.read();
+            base_template = base.read()
     else:
         template_ok = False
         failed_template = os.path.join("templates", base_template_name)
@@ -393,24 +403,24 @@ def build_tag_pages(site_conf, page_collection):
     tag_page.mustache
     page_list_item.mustache
     """
-    global PAGE_TAGS
+    global SITE_CONF
 
     # Start by looking for the right templates
     templates_ok = True
-    tag_list_template_name = "tag_list_page.mustache"
-    tag_page_template_name = "tag_page.mustache"
-    page_list_item_template_name = "page_list_item.mustache"
-    if not os.access(os.path.join("templates", tag_list_template_name), os.R_OK):
+    tag_list_template_name = "tag_list_page"
+    tag_page_template_name = "tag_page"
+    page_list_item_template_name = "page_list_item"
+    if not os.access(os.path.join("templates", tag_list_template_name + ".mustache"), os.R_OK):
 
     # Tell the user what went wrong
         print("Template '{}' not found!".format(tag_list_template_name))
         templates_ok = False
 
-    if not os.access(os.path.join("templates", tag_page_template_name), os.R_OK):
+    if not os.access(os.path.join("templates", tag_page_template_name + ".mustache"), os.R_OK):
         print("Template '{}' not found!".format(tag_page_template_name))
         templates_ok = False
     
-    if not os.access(os.path.join("templates", page_list_item_template_name), os.R_OK):
+    if not os.access(os.path.join("templates", page_list_item_template_name + ".mustache"), os.R_OK):
         print("Template '{}' not found!".format(page_list_item_template_name))
         templates_ok = False
 
@@ -426,7 +436,23 @@ def build_tag_pages(site_conf, page_collection):
                 collect_page_tags(page_vars)
 
         # Take a look at PAGE_TAGS and see what happened
-        print(PAGE_TAGS)
+        print(SITE_CONF)
+
+        # Now generate the main tags.html page
+
+        # Generate the content to feed into build_page()
+        #tags_page_content = pystache.render(tag_list_template, site_conf)
+        #print(tags_page_content)
+
+        # Need to build page variables to use build_page()
+        page_vars = {}
+        page_vars['title'] = "Tags"
+        page_vars['template'] = tag_list_template_name
+        page_vars['output_path'] = ""
+        page_vars['file_name'] = "tags.html"
+        build_page(site_conf, page_vars, "")
+
+
 
     else:
         print("Unable to generate tag pages!")
