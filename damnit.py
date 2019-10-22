@@ -214,7 +214,9 @@ def build_site():
                 print("Processing '{}'".format(root))
                 
                 # Collect page contents and metadata before anything else
+                print(SITE_CONF)
                 collect_page(page_vars, page_content)
+                print(SITE_CONF)
                 
 
             else:
@@ -234,6 +236,7 @@ def build_site():
         if os.access('output', os.W_OK):
             # Generate the tag pages
             build_tag_pages(SITE_CONF, PAGE_COLLECTION)
+            build_category_pages(SITE_CONF, PAGE_COLLECTION)
             
             # Build pages
             for page in PAGE_COLLECTION:
@@ -253,10 +256,74 @@ def build_site():
     # Print JSON to see if it's working
     # print(SITE_CONF)
 
-def collect_page_tags(page_vars):
-    """Scans page variables and adds tags to the global PAGE_TAGS variable."""
-    SITE_TAGS = []
+def collect_page_category(page_vars):
+    """Scans page variables and adds the category to the global SITE_CONF variable."""
+    global SITE_CONF
+    
     #print(page_vars)
+
+    # Pages should only have one category
+    cat = page_vars['page_category']
+    print(cat)
+
+    # Need this to prevent repeating code
+    add_cat = False
+
+    # Case 1: 'site_categories' is not in SITE_CONF
+    if 'site_categories' not in SITE_CONF.keys():
+        # Create it
+        SITE_CONF['site_categories'] = []
+   
+
+    SITE_CATS = SITE_CONF['site_categories']
+
+
+    # Case 2: 'site_categories' is empty
+    if len(SITE_CATS) == 0:
+        add_cat = True
+
+    # Case 3: Iterate over SITE_CATS
+    else:
+        for SC in SITE_CATS:
+
+            # Check each of the  in page_vars
+            if cat == SC['category_name']:
+
+                # Increment if so
+                SC['category_count'] += 1
+
+            else:
+                # Add the tag if not
+                add_cat = True
+
+    # If the tag doesn't exist, create it
+    if add_cat == True:
+        new_pc = {}
+        new_pc['category_name'] = cat 
+        new_pc['category_count'] = 1
+
+        # Need know whether the domain should be appended
+        if SITE_CONF['site_config_absolute_urls'] == True:
+            p_path = SITE_CONF['site_domain'] + "/categories/" + new_pc['category_name'] + ".html"
+
+        else:
+            p_path = "/categories/" + new_pc['category_name'] + ".html"
+
+        new_pc['category_page_url'] = p_path
+
+        print(new_pc)
+        SITE_CATS.append(new_pc)
+
+
+def collect_page_tags(page_vars):
+    """Scans page variables and adds tags to the global SITE_CONF variable."""
+    global SITE_CONF
+    
+    if 'site_tags' not in SITE_CONF.keys():
+        # Create it
+        SITE_CONF['site_tags'] = []
+    
+    SITE_TAGS = SITE_CONF['site_tags']
 
     # Iterate over the tags
     for tag in page_vars['page_tags']:
@@ -300,7 +367,7 @@ def collect_page_tags(page_vars):
             SITE_TAGS.append(new_pt)
     
     # Add PAGE_TAGS to SITE_CONF
-    SITE_CONF['site_tags'] = SITE_TAGS
+    #SITE_CONF['site_tags'] = SITE_TAGS
 
 
 
@@ -387,6 +454,107 @@ def build_page(site_conf, page_vars, content):
     # If the page template can not be found, tell the user.
     else:
         print("Template '{}' not found! Skipping....".format(template_name))
+
+
+def build_category_pages(site_conf, page_collection):
+    """Builds category pages in 'output/categories/<category_name>', and the
+    main 'output/category.html' list page.
+
+    Arguments:
+    site_conf -- The globe SITE_CONF variable.
+    page_collection -- The globe PAGE_COLLECTION variable.
+
+    Required templates:
+    category_list_page.mustache
+    category_page.mustache
+    page_list_item.mustache
+    """
+
+    # Start by looking for the right templates
+    templates_ok = True
+    cats_found = False
+    category_list_template_name = "category_list_page"
+    category_page_template_name = "category_page"
+    page_list_item_template_name = "page_list_item"
+    if not os.access(os.path.join("templates", category_list_template_name + ".mustache"), os.R_OK):
+
+    # Tell the user what went wrong
+        print("Template '{}' not found!".format(category_list_template_name))
+        templates_ok = False
+
+    if not os.access(os.path.join("templates", category_page_template_name + ".mustache"), os.R_OK):
+        print("Template '{}' not found!".format(category_page_template_name))
+        templates_ok = False
+   
+    # This is the ONLY template file that must be opened and read within this
+    # function.
+    if os.access(os.path.join("templates", page_list_item_template_name + ".mustache"), os.R_OK):
+        with open(os.path.join("templates", page_list_item_template_name + ".mustache")) as t:
+            page_list_item_template = t.read()
+
+    else:
+        print("Template '{}' not found!".format(page_list_item_template_name))
+        templates_ok = False
+
+
+    if templates_ok:
+
+        # Try to collect the page categories
+        for page in page_collection:
+
+            page_vars = page['page_vars']
+            # Make sure the page has tags to avoid errors
+            if 'page_category' in page_vars.keys():
+                collect_page_category(page_vars)
+
+        # Check if we have page categories to work with
+        if 'site_categories' in SITE_CONF.keys():
+            cats_found = True
+
+            # Need to build page variables to use build_page()
+            page_vars = {}
+            page_vars['page_title'] = "Categories"
+            page_vars['page_template'] = category_list_template_name
+            page_vars['page_output_path'] = "output"
+            page_vars['page_file_name'] = "categories.html"
+            build_page(site_conf, page_vars, "")
+
+            # Now for the crazy part: Getting the individual cat pages to generate
+            for cat in SITE_CONF['site_categories']:
+                page_vars['page_title'] = cat['category_name']
+                page_vars['page_template'] = category_page_template_name
+                page_vars['page_output_path'] = "output/categories"
+                page_vars['page_file_name'] = cat['category_name'] + ".html"
+
+                # Need to generate some pre-rendered content
+                page_list = []
+
+                # Search all pages for the current category and add them to the page
+                # list.
+                for page in PAGE_COLLECTION:
+                    if 'page_category' in page['page_vars']: 
+                        if page['page_vars']['page_category'] == cat['category_name']:
+                            page_list.append(page)
+
+                # Render the pages
+                content = ""
+                for p in page_list:
+                    content += pystache.render(page_list_item_template, p['page_vars'])
+                
+                page_vars['category_page_list'] = content
+                page_vars['category_name'] = cat['category_name']
+                build_page(SITE_CONF, page_vars, "")
+               
+
+        # Tell the user there are no categories
+        #else:
+        #    print("No page categories found! Skipping category page generation."
+
+    else:
+        print("Unable to generate category pages!")
+
+    if cats_found == False:
+        print("No page categories found. Skipping...")
 
 
 def build_tag_pages(site_conf, page_collection):
