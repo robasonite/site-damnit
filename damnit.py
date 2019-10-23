@@ -38,14 +38,65 @@ def get_datetime():
 
 # Convert time strings into other formats
 def get_split_datetime(fmt):
-    """ Converts 'datestr' into a string according to 'format' """
+    """Converts 'datestr' into a string according to 'fmt'.
+    Arguments:
+    fmt -- A standard time format string. Look up 'strftime'
+    """
 
     # Get the the date object
-    date_obj = datetime.strptime(datestr, "%Y-%m-%d %H-%M")
+    date_obj = datetime.strptime(datestr, "%Y-%m-%d %H:%M")
 
     # Make a new time string
     new_date = date_obj.strftime(fmt)
     return new_date
+
+def sort_date_sring_list(date_list, direction='asc'):
+    """Sorts an array of date strings by date. The date string must have the
+    format '%Y-%m-%d %H-%M'.
+    Arguments:
+    date_list -- The array to work on.
+    direction -- Which direction to sort in. It can be 'asc' for ascending or
+    'des' for descending.
+
+    Conversion happens in-place via lambda.
+    """
+
+    # Sort the date strings with a lambda
+    date_list.sort(key = lambda date: datetime.strptime(date, "%Y-%m-%d %H:%M"))
+
+    # Ascending order is the default, so just return the list
+    if direction == 'asc':
+        return date_list
+
+    elif direction == 'des':
+        date_list.reverse()
+        return date_list
+
+
+def sort_pages_by_date():
+    global PAGE_COLLECTION
+
+    page_dates = []
+    new_collection = []
+
+    # Grab all date strings
+    for page in PAGE_COLLECTION:
+        if 'page_datetime' in page['page_vars']:
+            page_dates.append(page['page_vars']['page_datetime'])
+
+    sorted_dates = sort_date_sring_list(page_dates, 'des')
+
+    # Generate a new list with the pages in the right order
+    for date in page_dates:
+        for page in PAGE_COLLECTION:
+            if 'page_datetime' in page['page_vars']:
+                if date == page['page_vars']['page_datetime']:
+                    new_collection.append(page)
+
+    # Now make new_collection the new PAGE_COLLECTION
+    PAGE_COLLECTION = new_collection
+            
+
 
 
 # Handle CLI input
@@ -226,6 +277,9 @@ def build_site():
         # Print the collection to see where we're at
         #print(PAGE_COLLECTION)
 
+        # Now that page data has been collected, it needs to be sorted by date
+        sort_pages_by_date()
+
         # Before going any further, we need to create the output directory
         if not os.path.exists('output'):
             os.makedirs('output')
@@ -328,6 +382,8 @@ def collect_page_tags(page_vars):
 
     Arguments:
     page_vars -- Variables specified in 'var.json' for the given page.
+    
+    This function is used in collect_page()
     """
     global SITE_CONF
     
