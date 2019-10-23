@@ -19,3 +19,8 @@ I can now collect all of the pages before rendering them! That means I can now h
 # 2019-10-18 Tag collection working
 
 Started work on the `build_tag_pages()` function and finished the `collect_page_tags()` functions. I decided to make a new global variable called `PAGE_TAGS` to make tag page generation easier. I'm modifying the templates as I go. Right now, the `build_page()` function works as expected and the main content pages can be generated. Soon I will be able to generate lists of page links.
+
+
+# 2019-10-23 Category page generation is working
+
+And I also put in a check to make sure that there are tags and categories to process in the first place. Next step: sorting by date.
