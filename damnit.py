@@ -227,8 +227,10 @@ def build_site():
                     page_vars["page_tags"] = new_tags
 
                 # Date time handling
-                if "page_datetime" in page_vars:
-                    page_vars["page_has_datetime"] = True
+                # ALL PAGES MUST HAVE DATE TIME. If not, generate one.
+                if "page_datetime" not in page_vars:
+                    page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+                    #page_vars["page_has_datetime"] = True
 
                 # Output path won't be in page_vars by default
                 f_name = path.pop(-1)
