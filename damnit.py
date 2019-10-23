@@ -598,6 +598,7 @@ def build_category_pages(site_conf, page_collection):
             page_vars['page_template'] = category_list_template_name
             page_vars['page_output_path'] = "output"
             page_vars['page_file_name'] = "categories.html"
+            page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
             build_page(site_conf, page_vars, "")
 
             # Now for the crazy part: Getting the individual cat pages to generate
@@ -606,6 +607,7 @@ def build_category_pages(site_conf, page_collection):
                 page_vars['page_template'] = category_page_template_name
                 page_vars['page_output_path'] = "output/categories"
                 page_vars['page_file_name'] = cat['category_name'] + ".html"
+                page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
 
                 # Need to generate some pre-rendered content
                 page_list = []
@@ -702,6 +704,7 @@ def build_tag_pages(site_conf, page_collection):
             page_vars['page_template'] = tag_list_template_name
             page_vars['page_output_path'] = "output"
             page_vars['page_file_name'] = "tags.html"
+            page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
             build_page(site_conf, page_vars, "")
 
             # Now for the crazy part: Getting the individual tag pages to generate
@@ -710,6 +713,7 @@ def build_tag_pages(site_conf, page_collection):
                 page_vars['page_template'] = tag_page_template_name
                 page_vars['page_output_path'] = "output/tags"
                 page_vars['page_file_name'] = tag['tag_name'] + ".html"
+                page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
 
                 # Need to generate some pre-rendered content
                 page_list = []
