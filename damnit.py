@@ -214,6 +214,10 @@ def build_site():
 
                     page_vars["page_url"] = p_path
 
+                # Category handling
+                if "page_category" in page_vars:
+                    page_vars["page_has_category"] = True
+
                 # Tag handling
                 if "page_tags" in page_vars:
                     page_vars["page_has_tags"] = True
@@ -227,10 +231,14 @@ def build_site():
                     page_vars["page_tags"] = new_tags
 
                 # Date time handling
-                # ALL PAGES MUST HAVE DATE TIME. If not, generate one.
+                # ALL PAGES MUST HAVE DATE / TIME. If not, generate one.
                 if "page_datetime" not in page_vars:
                     page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
                     #page_vars["page_has_datetime"] = True
+
+                # Make sure all pages have a 'type'.
+                if "page_type" not in page_vars:
+                    page_vars["page_type"] = "none"
 
                 # Output path won't be in page_vars by default
                 f_name = path.pop(-1)
@@ -440,6 +448,74 @@ def collect_page_tags(page_vars):
     #SITE_CONF['site_tags'] = SITE_TAGS
 
 
+def collect_page_list_item(page_vars, target_key="", target_val=""):
+    """Scans page variables and adds page list items to the SITE_CONF variable.
+
+    Arguments:
+    page_vars -- Variables specified in 'var.json' for the given page.
+    target_key -- Specifies what page key to group by. 
+    target_val -- If specified, only pages with 'target_key = target_val' will
+    be added to the list.
+   
+    Required templates:
+    page_list_item.mustache
+   
+    Notes:
+    If 'target_key' is NOT set, the key 'site_page_list_all' will be created in
+    SITE_CONF.
+
+    If 'target_key' is set, but 'target_val' is not, the key
+    'site_page_list_<target_key>' will be created in SITE_CONF.
+
+    If 'target_key' and 'target_val' are set, the key 
+    'site_page_list_<target_key>_<target_val>' will be created in SITE_CONF.
+    """
+    global SITE_CONF
+    
+    page_list_item_template_name = "page_list_item"
+    if os.access(os.path.join("templates", page_list_item_template_name + ".mustache"), os.R_OK):
+        with open(os.path.join("templates", page_list_item_template_name + ".mustache")) as t:
+            page_list_item_template = t.read()
+
+    # List item content
+    content = ""
+    
+    # Generate a site variable named after the collection. The default is "",
+    # which means key_name = "site_page_list_all".
+    if target_key == "":
+        key_name = "site_page_list_all"
+        
+        for p in PAGE_COLLECTION:
+            content += pystache.render(page_list_item_template, p['page_vars'])
+
+    else:
+
+        if target_val == "":
+            key_name = "site_page_list_" + str(target_key)
+            
+            for p in PAGE_COLLECTION:
+                target_key_name = "page_" + target_key
+                if target_key_name in p['page_vars']:
+                    content += pystache.render(page_list_item_template, p['page_vars'])
+
+        else:
+            key_name = "site_page_list_" + str(target_key) + "_" + str(target_val)
+            
+            for p in PAGE_COLLECTION:
+                target_key_name = "page_" + target_key
+                if target_key_name in p['page_vars']:
+                    if target_val == p['page_vars'][target_key_name]:
+                        content += pystache.render(page_list_item_template, p['page_vars'])
+
+
+    
+    if key_name not in SITE_CONF.keys():
+        SITE_CONF[key_name] = ""
+
+    SITE_CONF[key_name] = content
+    #print(SITE_CONF[key_name])
+
+
 
 def collect_page(page_vars, page_content):
     global PAGE_COLLECTION
@@ -463,6 +539,12 @@ def collect_page(page_vars, page_content):
     # Make sure the page has tags to avoid errors
     if 'page_tags' in page_vars.keys():
         collect_page_tags(page_vars)
+
+    # Generate list items
+    collect_page_list_item(page_vars)
+    collect_page_list_item(page_vars, "type", "articles")
+    print(SITE_CONF['site_page_list_type_articles'])
+
 
 
 
