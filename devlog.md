@@ -24,3 +24,8 @@ Started work on the `build_tag_pages()` function and finished the `collect_page_
 # 2019-10-23 Category page generation is working
 
 And I also put in a check to make sure that there are tags and categories to process in the first place. Next step: sorting by date.
+
+
+# 2019-10-24 List of pages on index.html!
+
+I wrote a new function today called `collect_page_list_item()`. It pre-generates lists of pages assigns them to dynamically generated variables in `SITE_CONF` like `site_page_list_<target_key>_<target_val>` and `site_page_list_all`. Stick one of those between a couple of `<ul>` tags and watch the magic! I need to expand this function to allow setting a limit on the number of elements in a list. I think I can just put something like `site_page_list_limit` in `config.json` and use that.
