@@ -30,6 +30,17 @@ DATA_DIR = os.path.join(PROG_HOME, "res")
 
 ### Utility functions ###
 # Get the current time as a string.
+def strip_string(string):
+    """Strip spaces and special characters from a string. Useful for URLS.
+
+    Arguments:
+    string -- The string to strip
+
+    Returns the stripped string
+    """
+    new_string = ''.join(e for e in string if e.isalnum())
+    return new_string
+
 def get_datetime():
     """ Get the current date and time in a sensible format. """
     c_time = datetime.now()
@@ -39,6 +50,7 @@ def get_datetime():
 # Convert time strings into other formats
 def get_split_datetime(fmt):
     """Converts 'datestr' into a string according to 'fmt'.
+    
     Arguments:
     fmt -- A standard time format string. Look up 'strftime'
     """
@@ -376,10 +388,10 @@ def collect_page_category(page_vars):
 
         # Need know whether the domain should be appended
         if SITE_CONF['site_config_absolute_urls'] == True:
-            p_path = SITE_CONF['site_domain'] + "/categories/" + new_pc['category_name'] + ".html"
+            p_path = SITE_CONF['site_domain'] + "/categories/" + strip_string(new_pc['category_name']) + ".html"
 
         else:
-            p_path = "/categories/" + new_pc['category_name'] + ".html"
+            p_path = "/categories/" + strip_string(new_pc['category_name']) + ".html"
 
         new_pc['category_page_url'] = p_path
 
@@ -435,10 +447,10 @@ def collect_page_tags(page_vars):
 
             # Need know whether the domain should be appended
             if SITE_CONF['site_config_absolute_urls'] == True:
-                p_path = SITE_CONF['site_domain'] + "/tags/" + new_pt['tag_name'] + ".html"
+                p_path = SITE_CONF['site_domain'] + "/tags/" + strip_string(new_pt['tag_name']) + ".html"
 
             else:
-                p_path = "/tags/" + new_pt['tag_name'] + ".html"
+                p_path = "/tags/" + strip_string(new_pt['tag_name']) + ".html"
 
             new_pt['tag_page_url'] = p_path
 
@@ -543,7 +555,7 @@ def collect_page(page_vars, page_content):
     # Generate list items
     collect_page_list_item(page_vars)
     collect_page_list_item(page_vars, "type", "articles")
-    print(SITE_CONF['site_page_list_type_articles'])
+    #print(SITE_CONF['site_page_list_type_articles'])
 
 
 
