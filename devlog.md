@@ -29,3 +29,15 @@ And I also put in a check to make sure that there are tags and categories to pro
 # 2019-10-24 List of pages on index.html!
 
 I wrote a new function today called `collect_page_list_item()`. It pre-generates lists of pages assigns them to dynamically generated variables in `SITE_CONF` like `site_page_list_<target_key>_<target_val>` and `site_page_list_all`. Stick one of those between a couple of `<ul>` tags and watch the magic! I need to expand this function to allow setting a limit on the number of elements in a list. I think I can just put something like `site_page_list_limit` in `config.json` and use that.
+
+
+## TODO: Implement asset handling/copying
+
+Whenever a directory called `assets` is found in a page directory, it should be copied to the output as `/<page_path>/<page_name>`. For example, if the path `content/posts/awesome-post/assets` exists, then the output should be `/posts/awesome-post-assets/`. If the there is an `assets` directory in `content/index`, then it should be copied to the site root as `site_assets`.
+
+Themes should have their own assets at `<theme_dir>/<theme_name>/assets`. That should be copied to `site_assets/theme_assets`.
+
+
+## TODO: Theme management
+
+Speaking of themes, they should probably get their own dedicated directories and config files. Or maybe not. Haven't decided yet. Maybe I could simply add `site_theme_*` variables to `config.json`.
