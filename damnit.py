@@ -42,17 +42,20 @@ def strip_string(string):
     return new_string
 
 def get_datetime():
-    """ Get the current date and time in a sensible format. """
+    """ Get the current date and time as a string in the format '%Y-%m-%d %H-%M'."""
     c_time = datetime.now()
     time_str = c_time.strftime("%Y-%m-%d %H-%M")
     return time_str
 
 # Convert time strings into other formats
-def get_split_datetime(fmt):
+def get_split_datetime(datestr, fmt):
     """Converts 'datestr' into a string according to 'fmt'.
     
     Arguments:
     fmt -- A standard time format string. Look up 'strftime'
+
+    Returns:
+    new_date -- The converted datetime string
     """
 
     # Get the the date object
@@ -65,6 +68,7 @@ def get_split_datetime(fmt):
 def sort_date_sring_list(date_list, direction='asc'):
     """Sorts an array of date strings by date. The date string must have the
     format '%Y-%m-%d %H-%M'.
+
     Arguments:
     date_list -- The array to work on.
     direction -- Which direction to sort in. It can be 'asc' for ascending or
@@ -86,6 +90,9 @@ def sort_date_sring_list(date_list, direction='asc'):
 
 
 def sort_pages_by_date():
+    """Operates on the PAGE_COLLECTION global variable and sorts the collection
+    by datetime. The collection is modified in-place.
+    """
     global PAGE_COLLECTION
 
     page_dates = []
@@ -113,7 +120,11 @@ def sort_pages_by_date():
 
 # Handle CLI input
 def input_handler(help_text, version):
-    """ Handle command line arguments from the user """
+    """ Handle command line arguments from the user.
+
+    Gets commands from 'sys.argv' with several IF statements in a nested
+    structure.
+    """
     args = sys.argv
     length = len(sys.argv)
     if (length == 1):
@@ -146,7 +157,15 @@ def input_handler(help_text, version):
 
 def new_site(p=""):
     """Attempts to set up a new project directory at the specified path.
-    If the directory already exists, it displays an error and does nothing."""
+
+    Arguments:
+    p -- The path to build a new site in.
+
+    If the directory already exists, it displays an error and does nothing.
+    
+    Called by:
+    input_handler()
+    """
     # If the target directory is not specified, tell the user
     if p == "":
         print("You need to specifiy a location!")
@@ -532,7 +551,14 @@ def collect_page_list_item(page_vars, target_key="", target_val=""):
 def collect_page(page_vars, page_content):
     global PAGE_COLLECTION
     """Collects the contents of a page and it's variables into a dictionary, which
-    is then added to PAGE_COLLECTION."""
+    is then added to PAGE_COLLECTION.
+    
+    Arguments:
+    page_vars -- The page variables
+    page_contents -- The page contents
+    
+    Directly modifies the PAGE_COLLECTION global variable.
+    """
 
     # Create a new dict to hold the data
     pg_dict = {}
@@ -566,7 +592,7 @@ def build_page(site_conf, page_vars, content):
     Arguments:
     site_conf -- Pass the global SITE_CONF variable.
     page_vars -- Variables specified in 'var.json' for the given page.
-    content   -- The contents of 'page.html' for a given page.
+    content   -- The unrendered contents of 'page.html' for a given page.
     """
     # Get the template page name
     template_name = "{}.mustache".format(page_vars['page_template'])
