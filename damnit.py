@@ -349,6 +349,8 @@ def build_site():
         print(SITE_CONF['site_pages'])
         print("")
         print(SITE_CONF['site_pages_type_article'])
+        print("")
+        print(SITE_CONF)
 
 
         # Before going any further, we need to create the output directory
@@ -383,7 +385,7 @@ def build_site():
     # print(SITE_CONF)
 
 
-def collect_page_types(page_vars):
+def collect_page_type(page_vars):
     """Scans page variables and adds the type to the global SITE_CONF
     variable.
 
@@ -440,6 +442,17 @@ def collect_page_category(page_vars):
 
     SITE_CATS = SITE_CONF['site_categories']
 
+    # Also start building the page list
+    list_key_name = 'site_pages_category_' + strip_string(cat['name'])
+
+    if list_key_name not in SITE_CONF.keys():
+        SITE_CONF[list_key_name] = []
+
+    page_list = SITE_CONF[list_key_name]
+    page_item = {}
+    page_item['page_vars'] = page_vars
+    page_list.append(page_item)
+
 
     # Case 2: 'site_categories' is empty
     if len(SITE_CATS) == 0:
@@ -459,14 +472,14 @@ def collect_page_category(page_vars):
                 # Add the tag if not
                 add_cat = True
 
-    # If the tag doesn't exist, create it
+    # If the cat doesn't exist, create it
     if add_cat == True:
         new_pc = {}
         new_pc['category_name'] = cat['name']
         new_pc['category_count'] = 1
         new_pc['category_page_url'] = cat['category_page_url']
 
-        print(new_pc)
+        #print(new_pc)
         SITE_CATS.append(new_pc)
 
 
@@ -561,7 +574,7 @@ def collect_page(page_vars, page_content):
         collect_page_tags(page_vars)
 
     if 'page_type' in page_vars.keys():
-        collect_page_types(page_vars)
+        collect_page_type(page_vars)
 
     # Generate list items
     #print(SITE_CONF['site_page_list_type_articles'])
