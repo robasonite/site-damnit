@@ -197,7 +197,6 @@ def new_site(p=""):
 
 def build_site():
     global SITE_CONF
-    global PAGE_COLLECTION
     """Iterate over files in the 'content' directory and generate appropriate
     in the 'output' directory."""
 
@@ -231,13 +230,13 @@ def build_site():
                 path.pop(0)
                 sep = "{}".format(os.sep)
                 new_path = sep.join(path)
-                print("New path: {}".format(new_path))
+                #print("New path: {}".format(new_path))
                 # Also need to check if 'page_vars' has a url specified
                 # If not, generate one
                 if "page_url" not in page_vars:
 
                     # Need know whether the domain should be appended
-                    if SITE_CONF["site_config_absolute_urls"] == True:
+                    if SITE_CONF["site_absolute_urls"] == True:
                         p_path = SITE_CONF['site_domain'] + "/" + new_path + ".html"
 
                     else:
@@ -249,6 +248,19 @@ def build_site():
                 if "page_category" in page_vars:
                     page_vars["page_has_category"] = True
 
+                    #Convert the category
+                    new_cat = {}
+                    new_cat['name'] = page_vars['page_category']
+                    if SITE_CONF['site_absolute_urls'] == True:
+                        link = SITE_CONF['site_domain'] + "/categories/" + strip_string(page_vars['page_category']) + ".html"
+
+                    else:
+                        link = "/categories/" + strip_string(page_vars['page_category']) + ".html"
+
+                    new_cat['category_page_url'] = link
+                    
+                    page_vars['page_category'] = new_cat
+
                 # Tag handling
                 if "page_tags" in page_vars:
                     page_vars["page_has_tags"] = True
@@ -257,9 +269,23 @@ def build_site():
                     # functionality
                     new_tags = []
                     for x in page_vars["page_tags"]:
-                        new_tags.append({"name": x})
+                        n_tag = {}
+                        n_tag['name'] = x
+
+                        # Would be nice if tags had links
+                        # Need know whether the domain should be appended
+                        if SITE_CONF['site_absolute_urls'] == True:
+                            link = SITE_CONF['site_domain'] + "/tags/" + strip_string(x) + ".html"
+
+                        else:
+                            link = "/tags/" + strip_string(x) + ".html"
+
+                        n_tag['tag_page_url'] = link
+                        new_tags.append(n_tag)
+
                     
                     page_vars["page_tags"] = new_tags
+
 
                 # Date time handling
                 # ALL PAGES MUST HAVE DATE / TIME. If not, generate one.
@@ -306,7 +332,7 @@ def build_site():
                 print("Processing '{}'".format(root))
                 
                 # Collect page contents and metadata before anything else
-                print(SITE_CONF)
+                #print(SITE_CONF)
                 collect_page(page_vars, page_content)
                 
             else:
@@ -320,6 +346,10 @@ def build_site():
 
         # Now that page data has been collected, it needs to be sorted by date
         sort_pages_by_date()
+        print(SITE_CONF['site_pages'])
+        print("")
+        print(SITE_CONF['site_pages_type_article'])
+
 
         # Before going any further, we need to create the output directory
         if not os.path.exists('output'):
@@ -329,13 +359,13 @@ def build_site():
         if os.access('output', os.W_OK):
 
             # Generate the tag pages
-            build_tag_pages(SITE_CONF, PAGE_COLLECTION)
+            build_tag_pages(SITE_CONF)
 
             # Generate category pages
-            build_category_pages(SITE_CONF, PAGE_COLLECTION)
+            build_category_pages(SITE_CONF)
             
             # Build regualar pages
-            for page in PAGE_COLLECTION:
+            for page in SITE_CONF['site_pages']:
                 build_page(SITE_CONF, page['page_vars'], page['page_content'])
                 #print(page)
 
@@ -351,6 +381,36 @@ def build_site():
 
     # Print JSON to see if it's working
     # print(SITE_CONF)
+
+
+def collect_page_types(page_vars):
+    """Scans page variables and adds the type to the global SITE_CONF
+    variable.
+
+    Arguments:
+    page_vars -- Variables specified in 'var.json' for the given page.
+
+    This function is used in collect_page()
+    """
+    global SITE_CONF
+    
+    #print(page_vars)
+
+    # Pages should only have one type
+    page_type = strip_string(page_vars['page_type'])
+    key_name = 'site_pages_type_' + strip_string(page_vars['page_type'])
+    print(page_type)
+
+    # Case 1: 'site_page_type_<name>' is not in SITE_CONF
+    if key_name not in SITE_CONF.keys():
+        # Create it
+        SITE_CONF[key_name] = []
+   
+    type_page = {}
+    type_page['page_vars'] = page_vars
+
+    SITE_CONF[key_name].append(type_page)
+
 
 def collect_page_category(page_vars):
     """Scans page variables and adds the category to the global SITE_CONF
@@ -402,17 +462,9 @@ def collect_page_category(page_vars):
     # If the tag doesn't exist, create it
     if add_cat == True:
         new_pc = {}
-        new_pc['category_name'] = cat 
+        new_pc['category_name'] = cat['name']
         new_pc['category_count'] = 1
-
-        # Need know whether the domain should be appended
-        if SITE_CONF['site_config_absolute_urls'] == True:
-            p_path = SITE_CONF['site_domain'] + "/categories/" + strip_string(new_pc['category_name']) + ".html"
-
-        else:
-            p_path = "/categories/" + strip_string(new_pc['category_name']) + ".html"
-
-        new_pc['category_page_url'] = p_path
+        new_pc['category_page_url'] = cat['category_page_url']
 
         print(new_pc)
         SITE_CATS.append(new_pc)
@@ -464,14 +516,7 @@ def collect_page_tags(page_vars):
             new_pt['tag_name'] = tag['name']
             new_pt['tag_count'] = 1
 
-            # Need know whether the domain should be appended
-            if SITE_CONF['site_config_absolute_urls'] == True:
-                p_path = SITE_CONF['site_domain'] + "/tags/" + strip_string(new_pt['tag_name']) + ".html"
-
-            else:
-                p_path = "/tags/" + strip_string(new_pt['tag_name']) + ".html"
-
-            new_pt['tag_page_url'] = p_path
+            new_pt['tag_page_url'] = tag['tag_page_url']
 
             SITE_TAGS.append(new_pt)
     
@@ -479,79 +524,9 @@ def collect_page_tags(page_vars):
     #SITE_CONF['site_tags'] = SITE_TAGS
 
 
-def collect_page_list_item(page_vars, target_key="", target_val=""):
-    """Scans page variables and adds page list items to the SITE_CONF variable.
-
-    Arguments:
-    page_vars -- Variables specified in 'var.json' for the given page.
-    target_key -- Specifies what page key to group by. 
-    target_val -- If specified, only pages with 'target_key = target_val' will
-    be added to the list.
-   
-    Required templates:
-    page_list_item.mustache
-   
-    Notes:
-    If 'target_key' is NOT set, the key 'site_page_list_all' will be created in
-    SITE_CONF.
-
-    If 'target_key' is set, but 'target_val' is not, the key
-    'site_page_list_<target_key>' will be created in SITE_CONF.
-
-    If 'target_key' and 'target_val' are set, the key 
-    'site_page_list_<target_key>_<target_val>' will be created in SITE_CONF.
-    """
-    global SITE_CONF
-    
-    page_list_item_template_name = "page_list_item"
-    if os.access(os.path.join("templates", page_list_item_template_name + ".mustache"), os.R_OK):
-        with open(os.path.join("templates", page_list_item_template_name + ".mustache")) as t:
-            page_list_item_template = t.read()
-
-    # List item content
-    content = ""
-    
-    # Generate a site variable named after the collection. The default is "",
-    # which means key_name = "site_page_list_all".
-    if target_key == "":
-        key_name = "site_page_list_all"
-        
-        for p in PAGE_COLLECTION:
-            content += pystache.render(page_list_item_template, p['page_vars'])
-
-    else:
-
-        if target_val == "":
-            key_name = "site_page_list_" + str(target_key)
-            
-            for p in PAGE_COLLECTION:
-                target_key_name = "page_" + target_key
-                if target_key_name in p['page_vars']:
-                    content += pystache.render(page_list_item_template, p['page_vars'])
-
-        else:
-            key_name = "site_page_list_" + str(target_key) + "_" + str(target_val)
-            
-            for p in PAGE_COLLECTION:
-                target_key_name = "page_" + target_key
-                if target_key_name in p['page_vars']:
-                    if target_val == p['page_vars'][target_key_name]:
-                        content += pystache.render(page_list_item_template, p['page_vars'])
-
-
-    
-    if key_name not in SITE_CONF.keys():
-        SITE_CONF[key_name] = ""
-
-    SITE_CONF[key_name] = content
-    #print(SITE_CONF[key_name])
-
-
-
 def collect_page(page_vars, page_content):
-    global PAGE_COLLECTION
     """Collects the contents of a page and it's variables into a dictionary, which
-    is then added to PAGE_COLLECTION.
+    is then added to SITE_CONF['site_pages'].
     
     Arguments:
     page_vars -- The page variables
@@ -560,13 +535,20 @@ def collect_page(page_vars, page_content):
     Directly modifies the PAGE_COLLECTION global variable.
     """
 
+    global SITE_CONF
+
+    if 'site_pages' not in SITE_CONF.keys():
+        SITE_CONF['site_pages'] = []
+
+    SITE_PAGES = SITE_CONF['site_pages']
+
     # Create a new dict to hold the data
     pg_dict = {}
     pg_dict['page_vars'] = page_vars
     pg_dict['page_content'] = page_content
 
     # Add to the page
-    PAGE_COLLECTION.append(pg_dict)
+    SITE_PAGES.append(pg_dict)
 
     # Also collect the metadata
                 
@@ -578,9 +560,10 @@ def collect_page(page_vars, page_content):
     if 'page_tags' in page_vars.keys():
         collect_page_tags(page_vars)
 
+    if 'page_type' in page_vars.keys():
+        collect_page_types(page_vars)
+
     # Generate list items
-    collect_page_list_item(page_vars)
-    collect_page_list_item(page_vars, "type", "articles")
     #print(SITE_CONF['site_page_list_type_articles'])
 
 
@@ -657,7 +640,7 @@ def build_page(site_conf, page_vars, content):
         print("Template '{}' not found! Skipping....".format(template_name))
 
 
-def build_category_pages(site_conf, page_collection):
+def build_category_pages(site_conf):
     """Builds category pages in 'output/categories/<category_name>', and the
     main 'output/category.html' list page.
 
@@ -734,7 +717,7 @@ def build_category_pages(site_conf, page_collection):
 
                 # Search all pages for the current category and add them to the page
                 # list.
-                for page in page_collection:
+                for page in site_conf['site_pages']:
                     if 'page_category' in page['page_vars']: 
                         if page['page_vars']['page_category'] == cat['category_name']:
                             page_list.append(page)
@@ -760,12 +743,11 @@ def build_category_pages(site_conf, page_collection):
         print("No page categories found. Skipping...")
 
 
-def build_tag_pages(site_conf, page_collection):
+def build_tag_pages(site_conf):
     """Builds tag pages in 'output/tags/<tag_name>', and the main 'output/tags.html' list page.
 
     Arguments:
     site_conf -- The globe SITE_CONF variable.
-    page_collection -- The globe PAGE_COLLECTION variable.
 
     Required templates:
     tag_list_page.mustache
@@ -840,7 +822,7 @@ def build_tag_pages(site_conf, page_collection):
 
                 # Search all pages for the current tag and add them to the page
                 # list.
-                for page in page_collection:
+                for page in site_conf['site_pages']:
                     if 'page_tags' in page['page_vars']: 
                         for pt in page['page_vars']['page_tags']:
                             if pt['name'] == tag['tag_name']:
