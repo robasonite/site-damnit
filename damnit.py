@@ -443,7 +443,7 @@ def collect_page_category(page_vars):
     SITE_CATS = SITE_CONF['site_categories']
 
     # Also start building the page list
-    list_key_name = 'site_pages_category_' + strip_string(cat['name'])
+    list_key_name = 'site_category_' + strip_string(cat['name'])
 
     if list_key_name not in SITE_CONF.keys():
         SITE_CONF[list_key_name] = []
@@ -501,6 +501,15 @@ def collect_page_tags(page_vars):
 
     # Iterate over the tags
     for tag in page_vars['page_tags']:
+
+        # Generate 'site_tag_<tag name>
+        list_key_name = 'site_tag_' + strip_string(tag['name'])
+        if list_key_name not in SITE_CONF.keys():
+            SITE_CONF[list_key_name] = []
+
+        tag_list_item = {}
+        tag_list_item['page_vars'] = page_vars
+        SITE_CONF[list_key_name].append(tag_list_item)
         print(tag)
 
         # Need this to prevent repeating code
