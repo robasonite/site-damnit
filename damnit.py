@@ -497,13 +497,16 @@ def collect_page_tags(page_vars):
         # Create it
         SITE_CONF['site_tags'] = []
     
-    SITE_TAGS = SITE_CONF['site_tags']
+    site_tags = SITE_CONF['site_tags']
 
     # Iterate over the tags
     for tag in page_vars['page_tags']:
 
+        # Strip the tag name
+        tag_name_stripped = strip_string(tag['name'])
+
         # Generate 'site_tag_<tag name>
-        list_key_name = 'site_tag_' + strip_string(tag['name'])
+        list_key_name = 'site_tag_' + tag_name_stripped
         if list_key_name not in SITE_CONF.keys():
             SITE_CONF[list_key_name] = []
 
@@ -512,25 +515,15 @@ def collect_page_tags(page_vars):
         SITE_CONF[list_key_name].append(tag_list_item)
         print(tag)
 
-        # Need this to prevent repeating code
-        add_tag = False
+        # Generate normal site_tags items
+        add_tag = True
+        for st in site_tags:
+            if st['tag_name'] == tag['name']:
+                add_tag = False
 
-        # Case 1: PAGE_TAGS is empty
-        if len(SITE_TAGS) == 0:
-            add_tag = True
+                # Increment the tag count
+                st['tag_count'] += 1
 
-        else:
-            # Iterate over PAGE_TAGS
-            for ST in SITE_TAGS:
-
-                # Check each of the tags in page_vars
-                if tag['name'] == ST['tag_name']:
-
-                    # Increment if so
-                    ST['tag_count'] += 1
-                else:
-                    # Add the tag if not
-                    add_tag = True
 
         # If the tag doesn't exist, create it
         if add_tag == True:
@@ -540,7 +533,7 @@ def collect_page_tags(page_vars):
 
             new_pt['tag_page_url'] = tag['tag_page_url']
 
-            SITE_TAGS.append(new_pt)
+            site_tags.append(new_pt)
     
     # Add PAGE_TAGS to SITE_CONF
     #SITE_CONF['site_tags'] = SITE_TAGS
@@ -808,9 +801,9 @@ def build_tag_pages(site_conf):
         #print(PAGE_COLLECTION)
 
         # By this point, collect_page() should have already collected all page
-        # tags
+        # tags.
 
-        # Check if we have page categories to work with
+        # Check if we have page tags to work with
         if 'site_tags' in site_conf.keys():
             tags_found = True
             # Take a look at PAGE_TAGS and see what happened
