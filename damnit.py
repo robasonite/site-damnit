@@ -719,30 +719,15 @@ def build_category_pages(site_conf):
 
             # Now for the crazy part: Getting the individual cat pages to generate
             for cat in site_conf['site_categories']:
+                category_list_key = 'site_category_' + strip_string(cat['category_name'])
                 page_vars['page_title'] = cat['category_name']
                 page_vars['page_template'] = category_page_template_name
                 page_vars['page_output_path'] = "output/categories"
-                page_vars['page_file_name'] = cat['category_name'] + ".html"
-                page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-
-                # Need to generate some pre-rendered content
-                page_list = []
-
-                # Search all pages for the current category and add them to the page
-                # list.
-                for page in site_conf['site_pages']:
-                    if 'page_category' in page['page_vars']: 
-                        if page['page_vars']['page_category'] == cat['category_name']:
-                            page_list.append(page)
-
-                # Render the pages
-                content = ""
-                for p in page_list:
-                    content += pystache.render(page_list_item_template, p['page_vars'])
-                
-                page_vars['category_page_list'] = content
-                page_vars['category_name'] = cat['category_name']
+                page_vars['page_file_name'] = strip_string(cat['category_name']) + ".html"
+                page_vars['page_datetime'] = datetime.now().strftime("%Y-%m-%d %H:%M")
+                page_vars['category_pages'] = SITE_CONF[category_list_key]
                 build_page(site_conf, page_vars, "")
+
                
 
         # Tell the user there are no categories
