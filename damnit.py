@@ -89,17 +89,15 @@ def sort_date_sring_list(date_list, direction='asc'):
         return date_list
 
 
-def sort_pages_by_date():
-    """Operates on the PAGE_COLLECTION global variable and sorts the collection
-    by datetime. The collection is modified in-place.
+def sort_pages_by_date(page_collection):
+    """Sorts a list of page dicts by datetime and returns the sorted
+    list.
     """
-    global PAGE_COLLECTION
-
     page_dates = []
     new_collection = []
 
     # Grab all date strings
-    for page in PAGE_COLLECTION:
+    for page in page_collection:
         if 'page_datetime' in page['page_vars']:
             page_dates.append(page['page_vars']['page_datetime'])
 
@@ -107,14 +105,13 @@ def sort_pages_by_date():
 
     # Generate a new list with the pages in the right order
     for date in page_dates:
-        for page in PAGE_COLLECTION:
+        for page in page_collection:
             if 'page_datetime' in page['page_vars']:
                 if date == page['page_vars']['page_datetime']:
                     new_collection.append(page)
 
-    # Now make new_collection the new PAGE_COLLECTION
-    PAGE_COLLECTION = new_collection
-            
+    # Return the new collection
+    return new_collection
 
 
 
@@ -345,7 +342,8 @@ def build_site():
         #print(PAGE_COLLECTION)
 
         # Now that page data has been collected, it needs to be sorted by date
-        sort_pages_by_date()
+        SITE_CONF['site_pages'] = sort_pages_by_date(SITE_CONF['site_pages'])
+        SITE_CONF['site_pages_type_article'] = sort_pages_by_date(SITE_CONF['site_pages_type_article'])
         print(SITE_CONF['site_pages'])
         print("")
         print(SITE_CONF['site_pages_type_article'])
