@@ -344,11 +344,11 @@ def build_site():
         # Now that page data has been collected, it needs to be sorted by date
         SITE_CONF['site_pages'] = sort_pages_by_date(SITE_CONF['site_pages'])
         SITE_CONF['site_pages_type_article'] = sort_pages_by_date(SITE_CONF['site_pages_type_article'])
-        print(SITE_CONF['site_pages'])
-        print("")
-        print(SITE_CONF['site_pages_type_article'])
-        print("")
-        print(SITE_CONF)
+        #print(SITE_CONF['site_pages'])
+        #print("")
+        #print(SITE_CONF['site_pages_type_article'])
+        #print("")
+        #print(SITE_CONF)
 
 
         # Before going any further, we need to create the output directory
@@ -399,7 +399,7 @@ def collect_page_type(page_vars):
     # Pages should only have one type
     page_type = strip_string(page_vars['page_type'])
     key_name = 'site_pages_type_' + strip_string(page_vars['page_type'])
-    print(page_type)
+    #print(page_type)
 
     # Case 1: 'site_page_type_<name>' is not in SITE_CONF
     if key_name not in SITE_CONF.keys():
@@ -427,20 +427,12 @@ def collect_page_category(page_vars):
 
     # Pages should only have one category
     cat = page_vars['page_category']
-    print(cat)
+    print("")
+    print("Cat name: {}".format(cat['name']))
+    print("")
 
-    # Need this to prevent repeating code
-    add_cat = False
 
-    # Case 1: 'site_categories' is not in SITE_CONF
-    if 'site_categories' not in SITE_CONF.keys():
-        # Create it
-        SITE_CONF['site_categories'] = []
-   
-
-    SITE_CATS = SITE_CONF['site_categories']
-
-    # Also start building the page list
+    # Add the page to site_category_<category name>
     list_key_name = 'site_category_' + strip_string(cat['name'])
 
     if list_key_name not in SITE_CONF.keys():
@@ -451,35 +443,34 @@ def collect_page_category(page_vars):
     page_item['page_vars'] = page_vars
     page_list.append(page_item)
 
+    
+    add_cat = True
+    # Case 1: 'site_categories' is not in SITE_CONF
+    if 'site_categories' not in SITE_CONF.keys():
+        # Create it
+        SITE_CONF['site_categories'] = []
 
-    # Case 2: 'site_categories' is empty
-    if len(SITE_CATS) == 0:
-        add_cat = True
-
-    # Case 3: Iterate over SITE_CATS
+    # Case 2: Iterate over SITE_CATS
     else:
-        for SC in SITE_CATS:
+        for sc in SITE_CONF['site_categories']:
 
-            # Check each of the  in page_vars
-            if cat == SC['category_name']:
+            # Check category name in page_vars
+            if  sc['category_name'] == cat['name']:
+                add_cat = False
 
                 # Increment if so
-                SC['category_count'] += 1
+                sc['category_count'] += 1
 
-            else:
-                # Add the tag if not
-                add_cat = True
-
-    # If the cat doesn't exist, create it
-    if add_cat == True:
+    if add_cat:
+        # Assemble page template variables
         new_pc = {}
         new_pc['category_name'] = cat['name']
         new_pc['category_count'] = 1
         new_pc['category_page_url'] = cat['category_page_url']
 
-        #print(new_pc)
-        SITE_CATS.append(new_pc)
-
+        # Add the new page dict to site_categories
+        SITE_CONF['site_categories'].append(new_pc)
+    
 
 def collect_page_tags(page_vars):
     """Scans page variables and adds tags to the global SITE_CONF variable.
@@ -511,7 +502,7 @@ def collect_page_tags(page_vars):
         tag_list_item = {}
         tag_list_item['page_vars'] = page_vars
         SITE_CONF[list_key_name].append(tag_list_item)
-        print(tag)
+        #print(tag)
 
         # Generate normal site_tags items
         add_tag = True
