@@ -803,7 +803,7 @@ def build_tag_pages(site_conf):
                 page_vars['page_title'] = tag['tag_name']
                 page_vars['page_template'] = tag_page_template_name
                 page_vars['page_output_path'] = "output/tags"
-                page_vars['page_file_name'] = tag['tag_name'] + ".html"
+                page_vars['page_file_name'] = strip_string(tag['tag_name']) + ".html"
                 page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
 
                 # Need to generate some pre-rendered content
