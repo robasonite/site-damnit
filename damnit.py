@@ -401,14 +401,13 @@ def collect_page_type(page_vars):
     key_name = 'site_pages_type_' + strip_string(page_vars['page_type'])
     #print(page_type)
 
-    # Case 1: 'site_page_type_<name>' is not in SITE_CONF
+    # If the key_name is not in SITE_CONF, create it.
     if key_name not in SITE_CONF.keys():
-        # Create it
         SITE_CONF[key_name] = []
-   
+  
+    # Add the page to the list
     type_page = {}
     type_page['page_vars'] = page_vars
-
     SITE_CONF[key_name].append(type_page)
 
 
@@ -712,11 +711,12 @@ def build_category_pages(site_conf):
             for cat in site_conf['site_categories']:
                 category_list_key = 'site_category_' + strip_string(cat['category_name'])
                 page_vars['page_title'] = cat['category_name']
+                page_vars['category_name'] = cat['category_name']
                 page_vars['page_template'] = category_page_template_name
                 page_vars['page_output_path'] = "output/categories"
                 page_vars['page_file_name'] = strip_string(cat['category_name']) + ".html"
                 page_vars['page_datetime'] = datetime.now().strftime("%Y-%m-%d %H:%M")
-                page_vars['category_pages'] = SITE_CONF[category_list_key]
+                page_vars['category_pages'] = sort_pages_by_date(SITE_CONF[category_list_key])
                 build_page(site_conf, page_vars, "")
 
                
