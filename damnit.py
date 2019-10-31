@@ -798,31 +798,24 @@ def build_tag_pages(site_conf):
             page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
             build_page(site_conf, page_vars, "")
 
-            # Now for the crazy part: Getting the individual tag pages to generate
+            # Now for the crazy part: Getting the individual tag pages to
+            # generate.
             for tag in site_conf['site_tags']:
                 page_vars['page_title'] = tag['tag_name']
                 page_vars['page_template'] = tag_page_template_name
                 page_vars['page_output_path'] = "output/tags"
                 page_vars['page_file_name'] = strip_string(tag['tag_name']) + ".html"
                 page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+               
+                # Use the existing site_tag_<tag name> page list.
+                page_list_key = 'site_tag_' + strip_string(tag['tag_name'])
+                page_list = site_conf[page_list_key]
 
-                # Need to generate some pre-rendered content
-                page_list = []
+                # Need to sort tag pages by date.
+                page_list = sort_pages_by_date(page_list)
 
-                # Search all pages for the current tag and add them to the page
-                # list.
-                for page in site_conf['site_pages']:
-                    if 'page_tags' in page['page_vars']: 
-                        for pt in page['page_vars']['page_tags']:
-                            if pt['name'] == tag['tag_name']:
-                                page_list.append(page)
-
-                # Render the pages
-                content = ""
-                for p in page_list:
-                    content += pystache.render(page_list_item_template, p['page_vars'])
-                
-                page_vars['tag_page_list'] = content
+                # Set the remaining page variables and build the page.
+                page_vars['tag_pages'] = page_list
                 page_vars['tag_name'] = tag['tag_name']
                 build_page(site_conf, page_vars, "")
            
