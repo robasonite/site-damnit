@@ -30,6 +30,18 @@ DATA_DIR = os.path.join(PROG_HOME, "res")
 
 ### Utility functions ###
 # Get the current time as a string.
+def copyDirectory(src, dest):
+    try:
+        shutil.copytree(src, dest)
+
+    # Directories are the same
+    except shutil.Error as e:
+        print('Directory not copied. Error: %s' % e)
+    # Any error saying that the directory doesn't exist
+    except OSError as e:
+        print('Directory not copied. Error: %s' % e)
+
+
 def strip_string(string):
     """Strip spaces and special characters from a string. Useful for URLS.
 
@@ -214,14 +226,24 @@ def build_site():
             # Specify the files we're looking for
             vars_file = os.path.join(root, "vars.json")
             content_file = os.path.join(root, "page.html")
+            assets_dir = os.path.join(root, "assets")
 
             # If a file is missing or can not be read, don't try to process it
             skip_file = False
+
+            # If we're in assets, skip all files
+            if "assets" in str(os.path.join(root)):
+                skip_file = True
 
             # Try to read the variables file
             if os.access(vars_file, os.R_OK):
                 with open(vars_file) as m:
                     page_vars = json.load(m)
+
+                # See if the page has assets
+                if os.access(assets_dir, os.R_OK):
+                    page_vars["page_assets_path"] = assets_dir
+                    print("Assets: {}".format(assets_dir))
 
                 # Remove 'content' from the page path
                 path.pop(0)
@@ -300,12 +322,16 @@ def build_site():
 
                 # Make sure output path never ends in 'os.sep'
                 if new_path != "":
-                    page_vars['page_output_path'] = "output" + sep + new_path
+                    page_vars['page_output_path'] = "output" + sep + new_path + sep + f_name
                 else:
                     page_vars['page_output_path'] = "output"
 
-                # Neither will filename
-                page_vars['page_file_name'] = f_name + ".html"
+                # Neither will filename. Because all files are written to their
+                # own directories, 'page_file_name' will always be
+                # 'index.html'.
+                page_vars['page_file_name'] = "index.html"
+                print("page_file_name: {}".format(page_vars['page_file_name']))
+                print("page_output_path: {}".format(page_vars['page_output_path']))
 
 
                 #print(page_vars)
@@ -343,7 +369,7 @@ def build_site():
 
         # Now that page data has been collected, it needs to be sorted by date
         SITE_CONF['site_pages'] = sort_pages_by_date(SITE_CONF['site_pages'])
-        SITE_CONF['site_pages_type_article'] = sort_pages_by_date(SITE_CONF['site_pages_type_article'])
+        #SITE_CONF['site_pages_type_article'] = sort_pages_by_date(SITE_CONF['site_pages_type_article'])
         #print(SITE_CONF['site_pages'])
         #print("")
         #print(SITE_CONF['site_pages_type_article'])
@@ -368,6 +394,8 @@ def build_site():
             for page in SITE_CONF['site_pages']:
                 build_page(SITE_CONF, page['page_vars'], page['page_content'])
                 #print(page)
+
+                # Also copy assets
 
 
         else:
@@ -409,6 +437,9 @@ def collect_page_type(page_vars):
     type_page = {}
     type_page['page_vars'] = page_vars
     SITE_CONF[key_name].append(type_page)
+
+    # Sort items by date
+    SITE_CONF[key_name] = sort_pages_by_date(SITE_CONF[key_name])
 
 
 def collect_page_category(page_vars):
@@ -630,12 +661,23 @@ def build_page(site_conf, page_vars, content):
         #print(rendered_contents)
 
         # Need to write the page. This is where Pathlib really shines.
+        # Step 1: make output path
         Path(combo_vars['page_output_path']).mkdir(parents=True, exist_ok=True)
 
-        # Now try to write the page
+        # Step 2: write the page
         page_target = os.path.join(combo_vars['page_output_path'], combo_vars['page_file_name']) 
         with open(page_target, 'w') as p:
             p.write(rendered_contents)
+
+        # Step 3: copy the assets if there are any
+        if 'page_assets_path' in combo_vars.keys():
+            print("Page asset processing")
+            assets_dir = combo_vars['page_assets_path']
+            assets_output = os.path.join(combo_vars['page_output_path'], 'assets')
+            copyDirectory(assets_dir, assets_output)
+            print("asset path: {}".format(combo_vars['page_assets_path']))
+            print("output path: {}".format(combo_vars['page_output_path']))
+
 
 
     # If the page template can not be found, tell the user.
