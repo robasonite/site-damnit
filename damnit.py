@@ -8,6 +8,7 @@ import os
 import shutil
 import json
 import glob
+import pprint
 
 
 ### Variables ###
@@ -302,7 +303,7 @@ def build_site():
 
                         # Would be nice if tags had links
                         # Need know whether the domain should be appended
-                        if SITE_CONF['site_absolute_urls'] == True:
+                        if SITE_CONF['site_absolute_urls']:
                             link = SITE_CONF['site_domain'] + "/tags/" + strip_string(x) + ".html"
 
                         else:
@@ -319,6 +320,15 @@ def build_site():
                 # ALL PAGES MUST HAVE DATE / TIME. If not, generate one.
                 if "page_datetime" not in page_vars:
                     page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+                # Auto generate these variables for templates
+                pd = page_vars["page_datetime"]
+                page_vars["page_year"] = get_split_datetime(pd, "%Y")
+                page_vars["page_month"] = get_split_datetime(pd, "%m")
+                page_vars["page_day"] = get_split_datetime(pd, "%d")
+                page_vars["page_hour"] = get_split_datetime(pd, "%H")
+                page_vars["page_hour_12"] = get_split_datetime(pd, "%I")
+                page_vars["page_minute"] = get_split_datetime(pd, "%M")
                     #page_vars["page_has_datetime"] = True
 
                 # Make sure all pages have a 'type'.
@@ -431,6 +441,75 @@ def build_site():
     # print(SITE_CONF)
 
 
+def collect_page_date(page_vars, key_name):
+    """Scans page variables and adds the datetime to lists in SITE_CONF for
+    <key_name>_<month>_<day>_<year>.
+
+    Arguments:
+    page_vars -- Variables specified in 'var.json' for the given page.
+    key_name -- The name of the key in SITE_CONF to extend.
+
+    This function is used in collect_page()
+    """
+    global SITE_CONF
+    
+    #print(page_vars)
+
+    # Chop up the date
+    year = str(page_vars['page_year'])
+    month = str(page_vars['page_month'])
+    day = str(page_vars['page_day'])
+
+    # Start with the year
+    extended_key = key_name + "_years"
+    if extended_key not in SITE_CONF.keys():
+        SITE_CONF[extended_key] = []
+
+    site_years = SITE_CONF[extended_key]
+
+    add_year = True
+    for y in site_years:
+        if y['year_num'] == year:
+            add_year = False
+
+            # Increment the year page count
+            y['year_count'] += 1
+
+            # Add the page to year_pages
+            new_py_item = {}
+            new_py_item['page_vars'] = page_vars
+            y['year_pages'].append(new_py_item)
+
+            # Sort by date every time
+            y['year_pages'] = sort_pages_by_date(y['year_pages'])
+
+
+    if add_year:
+        new_py = {}
+        new_py['year_num'] = year
+        new_py['year_count'] = 1
+
+        # Configure the year url
+        if SITE_CONF['site_absolute_urls']:
+            link = SITE_CONF['site_domain'] + "/" + page_vars['page_type'] + "/" + year + ".html"
+        else:
+            link = "/" + page_vars['page_type'] + "/" + year + ".html"
+       
+        # Add the link
+        new_py['year_url'] = link
+
+        # Each year should have a list of pages
+        new_py['year_pages'] = []
+        new_py_item = {}
+        new_py_item['page_vars'] = page_vars
+        new_py['year_pages'].append(new_py_item)
+
+
+        # Append the new page year
+        site_years.append(new_py)
+        pprint.pprint(site_years)
+
+
 def collect_page_type(page_vars):
     """Scans page variables and adds the type to the global SITE_CONF
     variable.
@@ -460,6 +539,9 @@ def collect_page_type(page_vars):
 
     # Sort items by date
     SITE_CONF[key_name] = sort_pages_by_date(SITE_CONF[key_name])
+
+    # Generate year_month_day pages
+    collect_page_date(page_vars, key_name)
 
 
 def collect_page_category(page_vars):
@@ -766,7 +848,17 @@ def build_category_pages(site_conf):
             page_vars['page_template'] = category_list_template_name
             page_vars['page_output_path'] = "output"
             page_vars['page_file_name'] = "categories.html"
+
+            # Give the user some variety in templates
             page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+            page_vars["page_year"] = datetime.now().strftime("%Y")
+            page_vars["page_month"] = datetime.now().strftime("%m")
+            page_vars["page_day"] = datetime.now().strftime("%d")
+            page_vars["page_hour"] = datetime.now().strftime("%H")
+            page_vars["page_hour_12"] = datetime.now().strftime("%I")
+            page_vars["page_minute"] = datetime.now().strftime("%M")
+
+            # Run the build function
             build_page(site_conf, page_vars, "")
 
             # Now for the crazy part: Getting the individual cat pages to generate
@@ -778,6 +870,12 @@ def build_category_pages(site_conf):
                 page_vars['page_output_path'] = "output/categories"
                 page_vars['page_file_name'] = strip_string(cat['category_name']) + ".html"
                 page_vars['page_datetime'] = datetime.now().strftime("%Y-%m-%d %H:%M")
+                page_vars["page_year"] = datetime.now().strftime("%Y")
+                page_vars["page_month"] = datetime.now().strftime("%m")
+                page_vars["page_day"] = datetime.now().strftime("%d")
+                page_vars["page_hour"] = datetime.now().strftime("%H")
+                page_vars["page_hour_12"] = datetime.now().strftime("%I")
+                page_vars["page_minute"] = datetime.now().strftime("%M")
                 page_vars['category_pages'] = sort_pages_by_date(SITE_CONF[category_list_key])
                 build_page(site_conf, page_vars, "")
 
@@ -858,6 +956,12 @@ def build_tag_pages(site_conf):
             page_vars['page_output_path'] = "output"
             page_vars['page_file_name'] = "tags.html"
             page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+            page_vars["page_year"] = datetime.now().strftime("%Y")
+            page_vars["page_month"] = datetime.now().strftime("%m")
+            page_vars["page_day"] = datetime.now().strftime("%d")
+            page_vars["page_hour"] = datetime.now().strftime("%H")
+            page_vars["page_hour_12"] = datetime.now().strftime("%I")
+            page_vars["page_minute"] = datetime.now().strftime("%M")
             build_page(site_conf, page_vars, "")
 
             # Now for the crazy part: Getting the individual tag pages to
@@ -868,6 +972,12 @@ def build_tag_pages(site_conf):
                 page_vars['page_output_path'] = "output/tags"
                 page_vars['page_file_name'] = strip_string(tag['tag_name']) + ".html"
                 page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+                page_vars["page_year"] = datetime.now().strftime("%Y")
+                page_vars["page_month"] = datetime.now().strftime("%m")
+                page_vars["page_day"] = datetime.now().strftime("%d")
+                page_vars["page_hour"] = datetime.now().strftime("%H")
+                page_vars["page_hour_12"] = datetime.now().strftime("%I")
+                page_vars["page_minute"] = datetime.now().strftime("%M")
                
                 # Use the existing site_tag_<tag name> page list.
                 page_list_key = 'site_tag_' + strip_string(tag['tag_name'])
