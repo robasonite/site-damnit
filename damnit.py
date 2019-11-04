@@ -29,9 +29,14 @@ DATA_DIR = os.path.join(PROG_HOME, "res")
 
 
 ### Utility functions ###
-# Get the current time as a string.
+# Copy a directory and overwrite destination if exists
 def copyDirectory(src, dest):
     try:
+
+        # If the destination exists, remove it first
+        if os.path.exists(dest):
+            shutil.rmtree(dest)
+
         shutil.copytree(src, dest)
 
     # Directories are the same
@@ -42,6 +47,7 @@ def copyDirectory(src, dest):
         print('Directory not copied. Error: %s' % e)
 
 
+# Get the current time as a string.
 def strip_string(string):
     """Strip spaces and special characters from a string. Useful for URLS.
 
@@ -231,9 +237,12 @@ def build_site():
             # If a file is missing or can not be read, don't try to process it
             skip_file = False
 
+            # Same for asset directories. They should not contain pages.
+            skip_assets_dir = False 
+
             # If we're in assets, skip all files
-            if "assets" in str(os.path.join(root)):
-                skip_file = True
+            if "assets" in root:
+                skip_assets_dir = True
 
             # Try to read the variables file
             if os.access(vars_file, os.R_OK):
@@ -330,15 +339,20 @@ def build_site():
                 # own directories, 'page_file_name' will always be
                 # 'index.html'.
                 page_vars['page_file_name'] = "index.html"
-                print("page_file_name: {}".format(page_vars['page_file_name']))
-                print("page_output_path: {}".format(page_vars['page_output_path']))
+                #print("page_file_name: {}".format(page_vars['page_file_name']))
+                #print("page_output_path: {}".format(page_vars['page_output_path']))
 
 
                 #print(page_vars)
 
 
             else:
-                print("File '{}' is missing or can not be read!".format(vars_file))
+
+                # Only tell the user what went wrong if we're not in an assets
+                # directory.
+                if not skip_assets_dir:
+                    print("File '{}' is missing or can not be read!".format(vars_file))
+                
                 skip_file = True
 
             # Try to get the page contents
@@ -347,7 +361,9 @@ def build_site():
                     page_content = c.read()
 
             else:
-                print("File '{}' is missing or can not be read!".format(content_file))
+                if not skip_assets_dir:
+                    print("File '{}' is missing or can not be read!".format(content_file))
+                
                 skip_file = True
 
             # If we're still good, process the page
@@ -359,10 +375,14 @@ def build_site():
                 collect_page(page_vars, page_content)
                 
             else:
-                print("Skipping '{}'".format(root))
+                if not skip_assets_dir:
+                    print("Skipping '{}'".format(root))
 
 
-            print(root)
+            #print(root)
+
+            # Add space between status outputs
+            print("")
         
         # Print the collection to see where we're at
         #print(PAGE_COLLECTION)
@@ -457,9 +477,9 @@ def collect_page_category(page_vars):
 
     # Pages should only have one category
     cat = page_vars['page_category']
-    print("")
-    print("Cat name: {}".format(cat['name']))
-    print("")
+#    print("")
+#    print("Cat name: {}".format(cat['name']))
+#    print("")
 
 
     # Add the page to site_category_<category name>
