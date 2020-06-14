@@ -1,90 +1,140 @@
-from datetime import datetime
-from inspect import getsourcefile
-from pathlib import Path
-from distutils.dir_util import copy_tree
-import pystache
+#!/usr/bin/env python3
+import pystache # external
+import commonmark # external
+import yaml # external? Fedora 30 seemed to install it by default, but not Ubuntu
 import sys
 import os
-import shutil
-import json
-import glob
 import pprint
+import shutil
+import errno
+import json
+from datetime import datetime
 
-
-### Variables ###
-SITE_CONF = {}
-PAGE_COLLECTION = []
-HELP_TXT = """
-- build    Builds the website project located in the current directory
-- new      Creates a new project at the specified path
-"""
-VERSION = "Version 0.0.2"
-
-# Get the current working directory
+# For pystache
 CWD = os.getcwd()
-PROG_HOME = Path(os.path.abspath(getsourcefile(lambda:0))).parent
-#print(PROG_HOME)
-DATA_DIR = os.path.join(PROG_HOME, "res")
-#print(DATA_DIR)
+TEMPLATES = os.path.join(CWD, "templates")
+OUTPUT = os.path.join(CWD, "output")
+CONTENT = os.path.join(CWD, "content")
+
+SITE_VARS = {}
+SITE_VARS['siteName'] = "Robasonite"
+SITE_VARS['siteAuthor'] = "Robert J Kight"
+SITE_VARS['siteAbsoluteUrls'] = False
+SITE_VARS['siteGenLunrJson'] = False
+SITE_VARS['siteDomain'] = "www.robasonite.com"
+SITE_VARS['siteDescription'] = "Linux, code, and other nerdy fun"
+SITE_VARS['siteDefaultKeywords'] = "linux, code, tutorials, scripts"
 
 
 
-### Utility functions ###
-# Copy a directory and overwrite destination if exists
-def copyDirectory(src, dest):
-    try:
+# Get site root before anything else
+def getSiteRoot(site_vars):
+    if site_vars['siteAbsoluteUrls']:
+        root = site_vars['siteDomain'] + '/'
+    else:
+        root = '/'
 
-        # If the destination exists, remove it first
-        if os.path.exists(dest):
-            shutil.rmtree(dest)
+    return root
 
-        shutil.copytree(src, dest)
-
-    # Directories are the same
-    except shutil.Error as e:
-        print('Directory not copied. Error: %s' % e)
-    # Any error saying that the directory doesn't exist
-    except OSError as e:
-        print('Directory not copied. Error: %s' % e)
+SITE_VARS['siteRoot'] = getSiteRoot(SITE_VARS)
 
 
-# Get the current time as a string.
-def strip_string(string):
-    """Strip spaces and special characters from a string. Useful for URLS.
+# Functions
+
+def genLunrJson(page_list):
+    """ Generates a file called index.json and writes it to the output
+    directory.
 
     Arguments:
-    string -- The string to strip
-
-    Returns the stripped string
+    page_list -- The dictionary of pages to encode
     """
-    new_string = ''.join(e for e in string if e.isalnum())
-    return new_string
 
-def get_datetime():
-    """ Get the current date and time as a string in the format '%Y-%m-%d %H-%M'."""
-    c_time = datetime.now()
-    time_str = c_time.strftime("%Y-%m-%d %H-%M")
-    return time_str
+    global OUTPUT
 
-# Convert time strings into other formats
-def get_split_datetime(datestr, fmt):
-    """Converts 'datestr' into a string according to 'fmt'.
+    # The dictionary needs to be filtered to get the relevent data
+    filtered_list = []
     
-    Arguments:
-    fmt -- A standard time format string. Look up 'strftime'
+    # Every page needs an id
+    page_id = 0
 
-    Returns:
-    new_date -- The converted datetime string
+    for p in page_list:
+
+        # A page must have content to be included
+        if (p['content'] != ""):
+            page_item = {}
+            page_item['id'] = page_id
+            
+            # Need to increment page_id every time
+            page_id += 1
+
+            page_item['title'] = p['title']
+            page_item['date'] = "{0}/{1}/{2}".format(p['year'], p['month'], p['day'])
+            #if ('title' in p):
+            #if ('date' in p):
+            if ('tags' in p):
+                page_item['tags'] = p['tags']
+            else:
+                page_item['tags'] = ['none']
+
+            if ('categories' in p):
+                page_item['categories'] = p['categories']
+            else:
+                page_item['categories'] = ['none']
+            
+            page_item['content'] = render_cmark(p['content'])
+            filtered_list.append(page_item)
+    
+    with open(os.path.join(OUTPUT, 'index.json'), 'w') as f:
+        json.dump(filtered_list, f)
+            
+
+
+def copy_path(src, dest):
+    """ Attempts to copy files and directories from 'src' to 'dest'. It will
+    automatically switch between `shutil.copy` and `shutil.copytree` based on
+    whether the `src` is a file or directory. When copying a directory, the
+    operation is recursive and will copy the entire contents of the directory.
+
+    Arguments:
+    src -- The file or directory to be copied.
+    dest -- The destination to copy to.
+    """
+    try:
+        shutil.copytree(src, dest)
+    except OSError as e:
+        # If the error was caused because the source wasn't a directory
+        if e.errno == errno.ENOTDIR:
+            shutil.copy(src, dest)
+        else:
+            print('Directory not copied. Error: %s' % e)
+
+def sort_date_obj_list(date_list, direction='asc'):
+    """Sorts an array of datetime objects by date.
+
+    Arguments:
+    date_list -- The array to work on.
+    direction -- Which direction to sort in. It can be 'asc' for ascending or
+    'des' for descending.
+
+    Conversion happens in-place via list.sort(). Returns a sorted list of
+    datetime objects.
     """
 
-    # Get the the date object
-    date_obj = datetime.strptime(datestr, "%Y-%m-%d %H:%M")
+    # Sort the date strings with a lambda
+    #date_list.sort(key = lambda date: datetime.strptime(date, "%Y-%m-%d %H:%M"))
 
-    # Make a new time string
-    new_date = date_obj.strftime(fmt)
-    return new_date
+    # Sort datetime objects
+    date_list.sort()
 
-def sort_date_sring_list(date_list, direction='asc'):
+    # Ascending order is the default, so just return the list
+    if direction == 'asc':
+        return date_list
+
+    elif direction == 'des':
+        date_list.reverse()
+        return date_list
+
+def sort_date_string_list(date_list, direction='asc'):
     """Sorts an array of date strings by date. The date string must have the
     format '%Y-%m-%d %H-%M'.
 
@@ -93,7 +143,7 @@ def sort_date_sring_list(date_list, direction='asc'):
     direction -- Which direction to sort in. It can be 'asc' for ascending or
     'des' for descending.
 
-    Conversion happens in-place via lambda.
+    Conversion happens in-place via lambda. Returns a sorted list of strings.
     """
 
     # Sort the date strings with a lambda
@@ -107,898 +157,834 @@ def sort_date_sring_list(date_list, direction='asc'):
         date_list.reverse()
         return date_list
 
-
-def sort_pages_by_date(page_collection):
+def sort_pages_by_date(page_list):
     """Sorts a list of page dicts by datetime and returns the sorted
     list.
+
+    Arguments:
+    page_list -- The list of page dictionaries to operate on
+
+    Returns a list of sorted dictionaries.
     """
     page_dates = []
-    new_collection = []
+    new_list = []
 
-    # Grab all date strings
-    for page in page_collection:
-        if 'page_datetime' in page['page_vars']:
-            page_dates.append(page['page_vars']['page_datetime'])
+    # NOTE: If for some reason the page does not have a 'date' attribute, it will be REMOVED from the page list!
+    # Grab all date strings:
+    for page in page_list:
+        if 'date' in page:
+            page_dates.append(page['date'])
 
-    sorted_dates = sort_date_sring_list(page_dates, 'des')
+        #else:
+        #    print("Page {} DOES NOT HAVE A DATE!".format(page['title']))
+
+    # NOTE: the date must be a string for sort_date_string_list() to work.
+    #sorted_dates = sort_date_string_list(page_dates, 'des')
+    sorted_dates = sort_date_obj_list(page_dates, 'des')
+    
+    # NOTE: For dates that are autogenerated, a bug can occur where the same
+    # page may appear multiple times in the returned page list. Since it makes
+    # sense for all pages to have a unique title, the final list is checked
+    # against a de-duplicated list of titles.
+    title_list = []
 
     # Generate a new list with the pages in the right order
     for date in page_dates:
-        for page in page_collection:
-            if 'page_datetime' in page['page_vars']:
-                if date == page['page_vars']['page_datetime']:
-                    new_collection.append(page)
+        for page in page_list:
+            if date == page['date']:
+
+                # Make sure that a page is only added ONCE
+                if page['title'] not in title_list:
+                    title_list.append(page['title'])
+                    new_list.append(page)
+
 
     # Return the new collection
-    return new_collection
+    return new_list
 
 
-
-# Handle CLI input
-def input_handler(help_text, version):
-    """ Handle command line arguments from the user.
-
-    Gets commands from 'sys.argv' with several IF statements in a nested
-    structure.
-    """
-    args = sys.argv
-    length = len(sys.argv)
-    if (length == 1):
-        print(version)
-        print(help_text)
-    else:
-        if (args[1] == "new"):
-            print("'new' command");
-            print(args)
-            if len(args) > 2:
-                new_site(args[2])
-            else:
-                new_site()
-            
-        elif (args[1] == "build"):
-            build_site()
-
-        elif (args[1] == "list"):
-            print("'link' command")
-
-        elif (args[1] == "edit"):
-            print("'edit' command")
-
-        else:
-            print("'{0}' is not a valid option.".format(args[1]))
-            print(help_text)
-
-
-### Site generation functions ###
-
-def new_site(p=""):
-    """Attempts to set up a new project directory at the specified path.
+def render_cmark(data):
+    """ Renders a Markdown string of text with the CommonMark library.
 
     Arguments:
-    p -- The path to build a new site in.
+    data -- The data, in the form of a string, to be processed.
 
-    If the directory already exists, it displays an error and does nothing.
-    
-    Called by:
-    input_handler()
+    Returns a string of HTML.
     """
-    # If the target directory is not specified, tell the user
-    if p == "":
-        print("You need to specifiy a location!")
+    return commonmark.commonmark(data)
 
-    # Else, append the path the user provided to CWD
+
+def split_yaml(data):
+    """ Splits text from a page file into YAML and Content sections. The raw
+    Content is added directly to the resulting dictionary as the value of the
+    'content' key. The page date is processed to produce keys for 'year',
+    'month', 'day', 'hour', and 'minute'.
+
+    Arguments:
+    data -- The page text to operate on
+
+    Returns a dictionary object containing all data from the page contents and
+    YAML frontmatter.
+    """
+    # Pages
+    divided = data.split('---')
+    #print(len(divided))
+    #print(divided)
+    y_data = yaml.safe_load(divided[1])
+    #print(type(y_data))
+    #print(y_data)
+
+    # Some stub pages may not have content
+    if divided[2]:
+        y_data['content'] = divided[2]
+    
+    #parsed_yaml = yaml.load(y_data)
+
+    # Run page summaries through commonmark?
+    if 'summary' in y_data.keys():
+        y_data['summary'] = commonmark.commonmark(y_data['summary'])
+
+    # Also need to process datetime
+    if 'date' in y_data.keys():
+
+        # There is a strange behavior in YAML that converts dates to
+        # <datetime> objects if there are no quotes around them.
+
+        # Need to specify in docs that date strings in page frontmatter
+        # SHOULD NOT BE QUOTED. Then the datetime conversion works
+        # properly. Will NOT implement switching with
+        # `type(y_data['date'])`.
+
+
+        #print(type(y_data['date']))
+        #print(y_data['title'])
+        
+        # NOTE: If datetime object generation is found to be
+        # inconsistant, uncomment the line below to generate a datetime 
+        # object with a more rigid format
+        #page_date = datetime.strptime(y_data['date'], "%Y-%m-%d %H:%M:%S")
+
+        # And comment out this line
+        page_date = y_data['date']
+        
     else:
-        if os.path.exists(p):
-            print("Path '{}' exists!".format(p))
-            print("Process aborted")
 
-        # Try to make the directories
+        # If page does not have a date, make one
+        page_date = datetime.now()
+        y_data['date'] = datetime.now()
+
+    # Break up the datetime into its components for use in templates
+    y_data['year'] = page_date.strftime("%Y")
+    y_data['month'] = page_date.strftime("%m")
+    y_data['day'] = page_date.strftime("%d")
+    y_data['hour'] = page_date.strftime("%H")
+    y_data['minute'] = page_date.strftime("%M")
+
+    # Month and day names
+    y_data['monthName'] = page_date.strftime("%B")
+    y_data['monthNameShort'] = page_date.strftime("%b")
+    y_data['dayName'] = page_date.strftime("%A")
+    y_data['dayNameShort'] = page_date.strftime("%a")
+    
+    # If page has no template defined, use the default
+    if 'template' not in y_data.keys():
+        y_data['template'] = "default"
+
+    # Make sure every page has a type key:
+    if 'type' not in y_data.keys():
+        y_data['type'] = "default"
+
+
+    return y_data
+
+def gen_page_types(page_list):
+    """ Splits a list of pages into a dictionary with a key for each page.
+
+    Arguments:
+    page_list -- List pages to operate on
+
+    Returns a dictionary with a key for each page type. Each page type has the value of a list.
+    """
+
+    # Start by grabbing a list of types
+    p_types = []
+    for p in page_list:
+        p_types.append(p['type'])
+
+    # De-dup
+    p_types = list(set(p_types))
+
+    # Add keys to the type dictionary
+    p_type_dict = {}
+    for t in p_types:
+        #print(t)
+        p_type_dict[t] = []
+
+        for p in page_list:
+            if p['type'] == t:
+                p_type_dict[t].append(p)
+
+        #print(len(p_type_dict[t]))
+
+    #for p in p_type_dict['default']:
+        #print(p['title'])
+
+    # Return
+    return p_type_dict
+
+
+def read_page(in_file):
+    """ Reads a page file and converts it into a dictionary with split_yaml().
+
+    Arguments:
+    in_file -- The file to read in.
+
+    Returns a dictionary containing page data.
+    """
+    global SITE_VARS
+    
+    with open(in_file) as f:
+        page_data = f.read()
+
+    page_dict = split_yaml(page_data)
+
+    # Combine the site vars with page vars
+    #for k in site_vars:
+    #   page_dict[k] = site_vars[k]
+        #print("{0}: {1}".format(k, site_vars[k]))
+
+    #print(page_dict)
+
+    # Fix tags
+    new_tags = []
+    if 'tags' in page_dict.keys():
+        for t in page_dict['tags']:
+            n = {}
+            n['name'] = t
+            n['link'] = SITE_VARS['siteRoot'] + "tags/{}/index.html".format(t)
+            new_tags.append(n)
+
+    page_dict['tags'] = new_tags
+
+    # Same song and dance for categories
+    new_cats = []
+    if 'categories' in page_dict.keys():
+        for c in page_dict['categories']:
+            d = {}
+            d['name'] = c
+            d['link'] = SITE_VARS['siteRoot'] + "categories/{}/index.html".format(c)
+            new_cats.append(d)
+
+    page_dict['categories'] = new_cats
+
+    # Add keywords and description if they don't exist
+    if 'description' not in page_dict:
+        # Try to use the summary
+        if 'summary' in page_dict:
+            page_dict['description'] = page_dict['summary']
+
+        # Else, you the site-wide fallback
         else:
-            print("Generating a new project in '{}'".format(p))
-            os.makedirs(p)
-            os.chdir(p)
-            CWD = os.getcwd()
+            page_dict['description'] = SITE_VARS['siteDescription']
 
-            # Make the required directories
-            os.makedirs("content")
-            os.makedirs("output")
-            os.makedirs("templates")
+    if 'keywords' not in page_dict:
+        page_dict['keywords'] = SITE_VARS['siteDefaultKeywords']
 
-            # Copy resource files
-            src = DATA_DIR
-            dst = CWD
-            copy_tree(src, dst)
-            print("Done!")
+
+    return page_dict
+
+
+def write_page(page_data):
+    """ Writes a page to page_data['output'] and creates the intermediate
+    directories as necessary. Fails if specified template file does not exist
+    in 'templates'. Page content is passed through Pystache and then Commonmark
+    facilitates usage of Mustache variables within page content. Then the entire
+    page is rendered with the Mustache template file.
+
+    Arguments:
+    page_data -- The data dictionary to process
+    """
+    global TEMPLATES
+    global SITE_VARS
+    tmpl_file_name = page_data['template'] + ".mustache"
+    tmpl_path = os.path.join(TEMPLATES, tmpl_file_name)
+    #print(tmpl_path)
+    out_file = page_data['output']
+
+    if os.access(tmpl_path, os.R_OK):
+        #print("success")
+
+        # Read the template file
+        with open(tmpl_path) as t:
+            template = t.read()
+
+        # Combine site vars with page data
+        for s in SITE_VARS:
+            page_data[s] = SITE_VARS[s]
+
+        # Pass content through Pystache first, and THEN Commonmark. This way,
+        # Mustache style variables can be used INSIDE the Markdown files and
+        # everything will render properly.
+
+        # NOTE: Auto-generated pages like tags and categories usually don't
+        # have content.
+
+        if 'content' in page_data.keys():
+            page_data['content'] = pystache.render(page_data['content'], page_data)
+            page_data['content'] = render_cmark(page_data['content'])
+
+        # Need to tell Pystache where to find partials
+        myRender = pystache.Renderer(search_dirs=TEMPLATES)
+
+
+        # Render the template
+        output = myRender.render(template, page_data)
+
+        # Create the path to the file if it doesn't exist
+        os.makedirs(os.path.dirname(out_file), exist_ok=True)
+
+        # Copy page assets directory
+        if 'assets' in page_data.keys():
+            copy_path(page_data['assets_src'], page_data['assets_dest'])
+        
+        # Write output to a file
+        #print(output)
+        with open(out_file, 'w') as f:
+            f.write(output)
+
+    else:
+      print("Failure! Template file {} does not exist or can not be read.".format(tmpl_path))
+
+
+def content_walker(content_dir):
+    """ Walks through the content directory and assembles a list of dictionary
+    objects.
+
+    Arguments:
+    content_directory -- The directory of Markdown files to operate on.
+
+    Returns a list of dictionaries, one per page.
+    """
+    page_list = []
+
+    if os.access(content_dir, os.R_OK):
+        #print("success")
+        for subdir, dirs, files in os.walk(content_dir):
+
+            for f in files:
+
+                # Only operate on MD files
+                f_path = os.path.join(subdir, f)
+                if str(f_path).endswith('.md'):
+                    #print("f_path: {}".format(f_path))
+                    #print("subdir: {}".format(subdir))
+                    #print("f: {}".format(f))
+
+                    # Slug is simply file name without extension.
+                    slug = str(f).split('.md')[0]
+                    #print(slug)
+                    
+                    # Trim the subdir down to content + OS separator
+                    stub = subdir[subdir.find('content'):]
+                    stub = stub.replace('content', '')
+                    stub = stub.replace(os.sep, '')
+                    #print("second", stub)
+
+                    # If stub is empty, make it a forward slash
+                    if stub == '':
+                        stub = "/"
+
+                    #print("stub:", stub)
+                    # Dirty partial URL
+                    dirty_url = "{}{}/{}/".format(SITE_VARS['siteRoot'], stub, slug)
+                    
+                    # Clean the triple slash
+                    partial_url = dirty_url.replace("///", "/")
+
+                    
+                    # Collect page data
+                    page_dict = read_page(f_path)
+
+                    # Add the slug
+                    page_dict['slug'] = slug
+
+
+                    # If there's and assets directory, collect it
+                    assets = slug + "-assets"
+                    assets_dir = os.path.join(subdir, assets)
+                    #print(assets_dir)
+                    #print(assets)
+                    if os.access(assets_dir, os.R_OK):
+                        #print("Print assets confirmed.")
+                        page_dict['assets_src'] = assets_dir
+                        #print("assets src: {}".format(assets_dir))
+
+                        # Need to specify the output for assets
+                        page_dict['assets_dest'] = str(os.path.join(subdir, slug, "assets")).replace('content', 'output')
+                        #print("assets dest: {}".format(page_dict['assets_dest']))
+
+                        # Also need to specify the assets link
+                        asset_url = partial_url + "assets"
+                        #print("assets url: {}".format(asset_url))
+                        page_dict['assets'] = asset_url
+                        #print(asset_url)
+
+
+                    # Need to keep tack of output path
+                    if str(f) == 'index.md':
+
+                        # Need to make a small exception for the home page
+                        output_path = str(os.path.join(subdir, "index.html"))
+                    else:
+                        output_path = str(os.path.join(subdir, slug, "index.html"))
+
+                    # Need to replace 'content' with 'output'
+                    output_path = output_path.replace('content', 'output')
+
+                    #print("output: {}".format(output_path))
+                    page_dict['output'] = output_path
+                   
+                    # Assign the URL
+                    page_dict['url'] = partial_url + "index.html"
+                    #print("url:", page_dict['url'])
+
+                    #print("page url: {}".format(page_dict['url']))
+                   
+                    #print("Raw dump")
+                    #print(page_dict)
+                    #print("")
+                    #print(page_dict.keys())
+
+                    # Add the page data to array
+                    page_list.append(page_dict)
+
+        # Sort pages by date
+        page_list = sort_pages_by_date(page_list)
+
+        # Return the page list
+        return page_list
+
+    else:
+        print("Unable to read content directory")
+        sys.exit(0)
+
+
+# Build article page archives
+def archive_article_walker(page_list, site_vars):
+
+    # Filter out everything that's NOT an article
+    article_list = []
+
+    for page in page_list:
+        if page['type'] == 'article':
+            article_list.append(page)
+
+    # Start off by building a list of years as an anchor
+    year_list = []
+
+    for page in article_list:
+        year_list.append(page['year'])
+
+    # Strip duplicates
+    year_list = list(set(year_list))
+
+    # Prefix for page urls
+    link_prefix = site_vars['siteRoot'] + "archive"
+
+    # Start building the years list
+    ar_dict = {}
+    ar_dict['years'] = []
+    for y in year_list:
+        y_dict = {}
+        y_dict['year'] = y
+        y_dict['count'] = 0
+
+        # Data for write_page()
+        y_dict['title'] = "Archive {}".format(y)
+        y_dict['url'] = "{0}/{1}/index.html".format(link_prefix, y)
+        y_dict['output'] = os.path.join(OUTPUT, "archive", y, "index.html")
+        y_dict['template'] = "archive-page" 
+
+        y_dict['pages'] = []
+
+        month_list = []
+        for page in article_list:
+            if page['year'] == y:
+                y_dict['count'] += 1
+                month_list.append(page['month'])
+
+                # Add to year pages
+                y_dict['pages'].append(page)
+        
+        month_list = list(set(month_list))
+        
+        # Second level
+        y_dict['months'] = []
+        for m in month_list:
+            monthTime = datetime.strptime("{} {} 01".format(y,m), "%Y %m %d")
+            m_dict = {}
+            m_dict['year'] = y
+            m_dict['month'] = m
+            m_dict['monthName'] = monthTime.strftime("%B")
+            m_dict['days'] = []
+            m_dict['pages'] = []
+        
+            # Data for write_page()
+            m_dict['title'] = "Archive {0}/{1}".format(y, m)
+            m_dict['url'] = "{0}/{1}/{2}/index.html".format(link_prefix, y, m)
+            m_dict['output'] = os.path.join(OUTPUT, "archive", y, m, "index.html")
+            m_dict['template'] = "archive-page"
+
+            # Third level
+            day_list = []
+            for page in article_list:
+                if page['year'] == y:
+                    if page['month'] == m:
+                        day_list.append(page['day'])
+                        # Add to month pages
+                        m_dict['pages'].append(page)
+
+            day_list = list(set(day_list))
+            for d in day_list:
+                d_dict = {}
+                d_dict['day'] = d
+                d_dict['pages'] = []
+                
+                # Data for write_page()
+                d_dict['title'] = "Archive {0}/{1}/{2}".format(y, m, d)
+                d_dict['url'] = "{0}/{1}/{2}/{3}/index.html".format(link_prefix, y, m, d, "index.html")
+                d_dict['output'] = os.path.join(OUTPUT, "archive", y, m, d)
+                d_dict['template'] = "archive-page"
+
+                # Append all dictionary items
+                m_dict['days'].append(d_dict)
+
+            y_dict['months'].append(m_dict)
+
+        ar_dict['years'].append(y_dict)
+
+#    print(ar_dict.keys())
+#
+#    for y in ar_dict['years']:
+#        print(y.keys())
+#        for m in y['months']:
+#            print(m.keys())
+#            for d in m['days']:
+#                print(d.keys())
+
+
+    # Add page data for index
+    ar_dict['title'] = "Archive"
+    ar_dict['url'] = "{0}/index.html".format(link_prefix)
+    ar_dict['output'] = os.path.join(OUTPUT, "archive", "index.html")
+    ar_dict['template'] = "archive-index"
+
+
+    return ar_dict
+
+def write_archive_pages(archive):
+    """ Writes the archive pages
+    """
+
+    # First, the index page, which takes the root of the dict
+    write_page(archive)
+
+    # Now dive into the years
+    for y in archive['years']:
+        y['span'] = y
+        
+        write_page(y)
+        for m in y['months']:
+            m['span'] = m
+            write_page(m)
+
+            # I rarely do multiple posts per day
+            #for d in m['days']
+            #   write_page(d)
+
+
+
+# Collect page categories
+def cat_walker(page_list, site_vars):
+    """ Builds a list of category dictionaries. Each dictionary contains a full
+    list of pages that have that category.
+
+    Arguments:
+    page_list -- List of page data dictionaries to operate on.
+    site_vars -- A dictionary of site variables to process.
+
+    Returns list dictionaries for each category found.
+    """
+
+    cat_list = []
+
+    for p in page_list:
+        if 'categories' in p:
+            for c in p['categories']:
+                cat_list.append(c['name'])
+
+    # Remove duplicates in the list
+    no_dups = list(set(cat_list))
+    #print(no_dups)
+
+    # convert to a list of dictionaries 
+    cat_dict_list = []
+    for n in no_dups:
+        cat_dict = {}
+        cat_dict['name'] = n
+        cat_dict['count'] = 0
+        cat_dict['pages'] = []
+
+        # Get the tag link
+        link = site_vars['siteRoot'] + "categories/" + n + "/index.html"
+
+        cat_dict['url'] = link
+
+        # Add information so that write_page() can render the page
+        cat_dict['title'] = n
+        cat_dict['output'] = os.path.join(OUTPUT, "categories", n, "index.html")
+        cat_dict['template'] = 'cat-page'
+
+        # Add to the list
+        cat_dict_list.append(cat_dict)
+
+    # Build up a list of dictionaries, one per category
+    for c in cat_dict_list:
+        for p in page_list:
+            if 'categories' in p:
+                for cat in p['categories']:
+                    if cat['name'] == c['name']:
+                        c['count'] += 1
+                        c['pages'].append(p)
+
+#    for c in cat_dict_list:
+#        print("cat name: {}".format(c['name']))
+#        print("cat count: {}".format(c['count']))
+#        print("cat url: {}".format(c['url']))
+#        print("cat pages: {}".format(len(c['pages'])))
+#        print("")
+    
+    # Return the new category list
+    return cat_dict_list
+
+
+# Collect page tags
+def tag_walker(page_list, site_vars):
+    """ Builds a list of tag dictionaries. Each dictionary contains a full list
+    of pages that have that tag.
+
+    Arguments:
+    page_list -- List of page data dictionaries to operate on.
+    site_vars -- A dictionary of site variables to process.
+
+    Returns list dictionaries for each tag found.
+    """
+    
+    global OUTPUT
+
+    tag_list = []
+
+    for p in page_list:
+        if 'tags' in p:
+            #print("Found tags")
+            #print(p['tags'])
+
+            # First gather up all of the tags
+            for t in p['tags']:
+                tag_list.append(t['name'])
+
+    # Remove duplicates in the list
+    no_dups = list(set(tag_list))
+    #print(no_dups)
+
+    # convert to a list of dictionaries 
+    tag_dict_list = []
+    for n in no_dups:
+        tag_dict = {}
+        tag_dict['name'] = n
+        tag_dict['count'] = 0
+        tag_dict['pages'] = []
+
+        # Get the tag link
+        link = site_vars['siteRoot'] + "tags/" + n + "/index.html"
+
+        tag_dict['url'] = link
+
+        # Set title, output, and template so the data can be passed to write_page()
+        tag_dict['title'] = n
+        tag_dict['output'] = os.path.join(OUTPUT, "tags", n, "index.html")
+        tag_dict['template'] = 'tag-page'
+
+        # Add to the list
+        tag_dict_list.append(tag_dict)
+
+    # Build up a list of dictionaries, one per tag
+    for t in tag_dict_list:
+        for p in page_list:
+            if 'tags' in p:
+                for tag in p['tags']:
+                    if tag['name'] == t['name']:
+                        t['pages'].append(p)
+                        t['count'] = len(t['pages'])
+
+#    for t in tag_dict_list:
+#        print("tag name: {}".format(t['name']))
+#        print("tag count: {}".format(t['count']))
+#        print("tag url: {}".format(t['url']))
+#        print("tag pages: {}".format(len(t['pages'])))
+#        print("")
+
+    # Return the new tag list
+    return tag_dict_list
+
+def gen_cat_index():
+    """ Generates data for the main category page index. Gives write_page() the correct data to render the page.
+    """
+
+    global OUTPUT
+    global SITE_VARS
+    
+    page_data = {}
+    page_data['template'] = "cat-index"
+    page_data['url'] = SITE_VARS['siteRoot'] + "categories/index.html"
+    page_data['output'] = os.path.join(OUTPUT, "categories", "index.html")
+    page_data['title'] = "Categories"
+
+    return page_data
+
+def gen_tag_index():
+    """ Generates data for the main tag page index. Gives write_page() the correct data to render the page.
+    """
+
+    global OUTPUT
+    global SITE_VARS
+    
+    page_data = {}
+    page_data['template'] = "tag-index"
+    page_data['url'] = SITE_VARS['siteRoot'] + "tags/index.html"
+    page_data['output'] = os.path.join(OUTPUT, "tags", "index.html")
+    page_data['title'] = "Tags"
+
+    return page_data
+
+
+def gen_tag_page():
+    """ Generates data to use for each of the tag pages.
+    """
+
+    global OUTPUT
+    global SITE_VARS
+    
+    page_data = {}
+    page_data['template'] = "tag-page"
+    page_data['url'] = SITE_VARS['siteRoot'] + "tags/index.html"
+    page_data['output'] = os.path.join(OUTPUT, "tags", "index.html")
+    page_data['title'] = "Tags"
+
+    return page_data
 
 
 def build_site():
-    global SITE_CONF
-    """Iterate over files in the 'content' directory and generate appropriate
-    in the 'output' directory."""
-
-    # First make sure that the current directory contains a file called
-    # 'config.json' and that we can read it.
-    if os.access("config.json", os.R_OK):
-
-        # Try to load the file
-        with open("config.json") as f:
-
-            # Assign the file to the global config
-            SITE_CONF = json.load(f)
-
-        # Next, try to dive into the 'content' directory
-        for root, dirs, files in os.walk("content"):
-            path = root.split(os.sep)
-
-            # Specify the files we're looking for
-            vars_file = os.path.join(root, "vars.json")
-            content_file = os.path.join(root, "page.html")
-            assets_dir = os.path.join(root, "assets")
-
-            # If a file is missing or can not be read, don't try to process it
-            skip_file = False
-
-            # Same for asset directories. They should not contain pages.
-            skip_assets_dir = False 
-
-            # If we're in assets, skip all files
-            if "assets" in root:
-                skip_assets_dir = True
-
-            # Try to read the variables file
-            if os.access(vars_file, os.R_OK):
-                with open(vars_file) as m:
-                    page_vars = json.load(m)
-
-                # See if the page has assets
-                if os.access(assets_dir, os.R_OK):
-                    page_vars["page_assets_path"] = assets_dir
-                    print("Assets: {}".format(assets_dir))
-
-                # Remove 'content' from the page path
-                path.pop(0)
-                sep = "{}".format(os.sep)
-                new_path = sep.join(path)
-                #print("New path: {}".format(new_path))
-                # Also need to check if 'page_vars' has a url specified
-                # If not, generate one
-                if "page_url" not in page_vars:
-
-                    # Need know whether the domain should be appended
-                    if SITE_CONF["site_absolute_urls"] == True:
-                        p_path = SITE_CONF['site_domain'] + "/" + new_path + ".html"
-
-                    else:
-                        p_path = "/" + new_path + ".html"
-
-                    page_vars["page_url"] = p_path
-
-                # Category handling
-                if "page_category" in page_vars:
-                    page_vars["page_has_category"] = True
-
-                    #Convert the category
-                    new_cat = {}
-                    new_cat['name'] = page_vars['page_category']
-                    if SITE_CONF['site_absolute_urls'] == True:
-                        link = SITE_CONF['site_domain'] + "/categories/" + strip_string(page_vars['page_category']) + ".html"
-
-                    else:
-                        link = "/categories/" + strip_string(page_vars['page_category']) + ".html"
-
-                    new_cat['category_page_url'] = link
-                    
-                    page_vars['page_category'] = new_cat
-
-                # Tag handling
-                if "page_tags" in page_vars:
-                    page_vars["page_has_tags"] = True
-
-                    # Convert tags into a format for adding additional
-                    # functionality
-                    new_tags = []
-                    for x in page_vars["page_tags"]:
-                        n_tag = {}
-                        n_tag['name'] = x
-
-                        # Would be nice if tags had links
-                        # Need know whether the domain should be appended
-                        if SITE_CONF['site_absolute_urls']:
-                            link = SITE_CONF['site_domain'] + "/tags/" + strip_string(x) + ".html"
-
-                        else:
-                            link = "/tags/" + strip_string(x) + ".html"
-
-                        n_tag['tag_page_url'] = link
-                        new_tags.append(n_tag)
-
-                    
-                    page_vars["page_tags"] = new_tags
-
-
-                # Date time handling
-                # ALL PAGES MUST HAVE DATE / TIME. If not, generate one.
-                if "page_datetime" not in page_vars:
-                    page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-
-                # Auto generate these variables for templates
-                pd = page_vars["page_datetime"]
-                page_vars["page_year"] = get_split_datetime(pd, "%Y")
-                page_vars["page_month"] = get_split_datetime(pd, "%m")
-                page_vars["page_day"] = get_split_datetime(pd, "%d")
-                page_vars["page_hour"] = get_split_datetime(pd, "%H")
-                page_vars["page_hour_12"] = get_split_datetime(pd, "%I")
-                page_vars["page_minute"] = get_split_datetime(pd, "%M")
-                    #page_vars["page_has_datetime"] = True
-
-                # Make sure all pages have a 'type'.
-                if "page_type" not in page_vars:
-                    page_vars["page_type"] = "none"
-
-                # Output path won't be in page_vars by default
-                f_name = path.pop(-1)
-                new_path = sep.join(path)
-
-                # Make sure output path never ends in 'os.sep'
-                if new_path != "":
-                    page_vars['page_output_path'] = "output" + sep + new_path + sep + f_name
-                else:
-                    page_vars['page_output_path'] = "output"
-
-                # Neither will filename. Because all files are written to their
-                # own directories, 'page_file_name' will always be
-                # 'index.html'.
-                page_vars['page_file_name'] = "index.html"
-                #print("page_file_name: {}".format(page_vars['page_file_name']))
-                #print("page_output_path: {}".format(page_vars['page_output_path']))
-
-
-                #print(page_vars)
-
-
-            else:
-
-                # Only tell the user what went wrong if we're not in an assets
-                # directory.
-                if not skip_assets_dir:
-                    print("File '{}' is missing or can not be read!".format(vars_file))
-                
-                skip_file = True
-
-            # Try to get the page contents
-            if os.access(content_file, os.R_OK):
-                with open(content_file) as c:
-                    page_content = c.read()
-
-            else:
-                if not skip_assets_dir:
-                    print("File '{}' is missing or can not be read!".format(content_file))
-                
-                skip_file = True
-
-            # If we're still good, process the page
-            if skip_file == False:
-                print("Processing '{}'".format(root))
-                
-                # Collect page contents and metadata before anything else
-                #print(SITE_CONF)
-                collect_page(page_vars, page_content)
-                
-            else:
-                if not skip_assets_dir:
-                    print("Skipping '{}'".format(root))
-
-
-            #print(root)
-
-            # Add space between status outputs
-            print("")
-        
-        # Print the collection to see where we're at
-        #print(PAGE_COLLECTION)
-
-        # Now that page data has been collected, it needs to be sorted by date
-        SITE_CONF['site_pages'] = sort_pages_by_date(SITE_CONF['site_pages'])
-        #SITE_CONF['site_pages_type_article'] = sort_pages_by_date(SITE_CONF['site_pages_type_article'])
-        #print(SITE_CONF['site_pages'])
-        #print("")
-        #print(SITE_CONF['site_pages_type_article'])
-        #print("")
-        #print(SITE_CONF)
-
-
-        # Before going any further, we need to create the output directory
-        if not os.path.exists('output'):
-            os.makedirs('output')
-
-        # Check to see if the directory is writable
-        if os.access('output', os.W_OK):
-
-            # Generate the tag pages
-            build_tag_pages(SITE_CONF)
-
-            # Generate category pages
-            build_category_pages(SITE_CONF)
-            
-            # Build regualar pages
-            for page in SITE_CONF['site_pages']:
-                build_page(SITE_CONF, page['page_vars'], page['page_content'])
-                #print(page)
-
-                # Also copy assets
-
-
-        else:
-            print("Output directory can not be written to!")
-            print("Please adjust permissions on the directory (or delete it) and try again.")
-
-
-    else:
-        print("Config file does not exist! Aborting...")
-
-
-    # Print JSON to see if it's working
-    # print(SITE_CONF)
-
-
-def collect_page_date(page_vars, key_name):
-    """Scans page variables and adds the datetime to lists in SITE_CONF for
-    <key_name>_<month>_<day>_<year>.
-
-    Arguments:
-    page_vars -- Variables specified in 'var.json' for the given page.
-    key_name -- The name of the key in SITE_CONF to extend.
-
-    This function is used in collect_page()
+    """ Build the website. Takes no arguments.
     """
-    global SITE_CONF
+    global SITE_VARS
+    content_dir = CONTENT 
+    #out_file = sys.argv[2]
+
+    #page_data = read_page(in_file, SITE_VARS)
+    #write_page(page_data, out_file)
+
+    # NOTE: Pages are sorted by date with sort_pages_by_date() in
+    # content_walker(). Once the page list is sorted, it remains sorted
+    # even after processing with tag_walker() and cat_walker().
+    page_list = content_walker(content_dir)
+    #for p in page_list:
+    #   print(p['date'])
+
+    tag_list = tag_walker(page_list, SITE_VARS)
+#    for t in tag_list:
+#        print(t['name'])
+#        for p in t['pages']:
+#            print(p['date'])
+#
+#        print("")
+
+
+    category_list = cat_walker(page_list, SITE_VARS)
     
-    #print(page_vars)
+    ar_dict = archive_article_walker(page_list, SITE_VARS)
 
-    # Chop up the date
-    year = str(page_vars['page_year'])
-    month = str(page_vars['page_month'])
-    day = str(page_vars['page_day'])
+    # Add vars to SITE_VARS
+    SITE_VARS['siteTags'] = tag_list
+    SITE_VARS['siteCategories'] = category_list
+    SITE_VARS['siteArticleArchive'] = ar_dict
+    SITE_VARS['sitePages'] = gen_page_types(page_list)
+    SITE_VARS['sitePages']['all'] = page_list
 
-    # Start with the year
-    extended_key = key_name + "_years"
-    if extended_key not in SITE_CONF.keys():
-        SITE_CONF[extended_key] = []
+    # Remove the output directory if it exists. write_page() will recreate it.
+    if os.path.exists(OUTPUT):
+        shutil.rmtree(OUTPUT)
 
-    site_years = SITE_CONF[extended_key]
+    # NOTE: Because of the way copy_path() works, this bit of code has to fire
+    # first.
 
-    add_year = True
-    for y in site_years:
-        if y['year_num'] == year:
-            add_year = False
-
-            # Increment the year page count
-            y['year_count'] += 1
-
-            # Add the page to year_pages
-            new_py_item = {}
-            new_py_item['page_vars'] = page_vars
-            y['year_pages'].append(new_py_item)
-
-            # Sort by date every time
-            y['year_pages'] = sort_pages_by_date(y['year_pages'])
+    # Copy assets from 'content' to 'output'
+    src = os.path.join(TEMPLATES, 'static')
+    if os.access(src, os.R_OK):
+        print("Copying template assets '{}'...".format(src))
+        copy_path(src, OUTPUT)
 
 
-    if add_year:
-        new_py = {}
-        new_py['year_num'] = year
-        new_py['year_count'] = 1
+    print("Generating pages...")
+    # Generate the pages
+    for p in SITE_VARS['sitePages']['all']:
+        #print(p['title'])
+        #print(p['output'])
+        write_page(p)
 
-        # Configure the year url
-        if SITE_CONF['site_absolute_urls']:
-            link = SITE_CONF['site_domain'] + "/" + page_vars['page_type'] + "/" + year + ".html"
-        else:
-            link = "/" + page_vars['page_type'] + "/" + year + ".html"
-       
-        # Add the link
-        new_py['year_url'] = link
-
-        # Each year should have a list of pages
-        new_py['year_pages'] = []
-        new_py_item = {}
-        new_py_item['page_vars'] = page_vars
-        new_py['year_pages'].append(new_py_item)
+    if (SITE_VARS['siteGenLunrJson']):
+        genLunrJson(SITE_VARS['sitePages']['all'])
 
 
-        # Append the new page year
-        site_years.append(new_py)
-        pprint.pprint(site_years)
+    # Write the tag index page
+    write_page(gen_tag_index())
 
+    # Write individual tag pages
+    for t in SITE_VARS['siteTags']:
+        write_page(t)
+    
+    # Write the category pages
+    for c in SITE_VARS['siteCategories']:
+        write_page(c)
+    
+    # Category index page
+    write_page(gen_cat_index())
 
-def collect_page_type(page_vars):
-    """Scans page variables and adds the type to the global SITE_CONF
-    variable.
+    # Archive pages
+    write_archive_pages(SITE_VARS['siteArticleArchive'])
+    
+    # Tell the user we're done
+    print("Done!")
+    print("Processed {} pages.".format(len(SITE_VARS['sitePages']['all'])))
 
-    Arguments:
-    page_vars -- Variables specified in 'var.json' for the given page.
-
-    This function is used in collect_page()
+def display_help():
+    """ Prints a help message.
     """
-    global SITE_CONF
+    print("Valid commands are:")
+    print("build -- Build the site in the current directory")
+    print("help  -- Show this message")
     
-    #print(page_vars)
 
-    # Pages should only have one type
-    page_type = strip_string(page_vars['page_type'])
-    key_name = 'site_pages_type_' + strip_string(page_vars['page_type'])
-    #print(page_type)
-
-    # If the key_name is not in SITE_CONF, create it.
-    if key_name not in SITE_CONF.keys():
-        SITE_CONF[key_name] = []
-  
-    # Add the page to the list
-    type_page = {}
-    type_page['page_vars'] = page_vars
-    SITE_CONF[key_name].append(type_page)
-
-    # Sort items by date
-    SITE_CONF[key_name] = sort_pages_by_date(SITE_CONF[key_name])
-
-    # Generate year_month_day pages
-    collect_page_date(page_vars, key_name)
-
-
-def collect_page_category(page_vars):
-    """Scans page variables and adds the category to the global SITE_CONF
-    variable.
-
-    Arguments:
-    page_vars -- Variables specified in 'var.json' for the given page.
-
-    This function is used in collect_page()
-    """
-    global SITE_CONF
-    
-    #print(page_vars)
-
-    # Pages should only have one category
-    cat = page_vars['page_category']
-#    print("")
-#    print("Cat name: {}".format(cat['name']))
-#    print("")
-
-
-    # Add the page to site_category_<category name>
-    list_key_name = 'site_category_' + strip_string(cat['name'])
-
-    if list_key_name not in SITE_CONF.keys():
-        SITE_CONF[list_key_name] = []
-
-    page_list = SITE_CONF[list_key_name]
-    page_item = {}
-    page_item['page_vars'] = page_vars
-    page_list.append(page_item)
-
-    
-    add_cat = True
-    # Case 1: 'site_categories' is not in SITE_CONF
-    if 'site_categories' not in SITE_CONF.keys():
-        # Create it
-        SITE_CONF['site_categories'] = []
-
-    # Case 2: Iterate over SITE_CATS
+## Main
+if len(sys.argv) > 1:
+    if sys.argv[1] == 'build':
+        build_site()
+    elif sys.argv[1] == 'help':
+        display_help()
     else:
-        for sc in SITE_CONF['site_categories']:
-
-            # Check category name in page_vars
-            if  sc['category_name'] == cat['name']:
-                add_cat = False
-
-                # Increment if so
-                sc['category_count'] += 1
-
-    if add_cat:
-        # Assemble page template variables
-        new_pc = {}
-        new_pc['category_name'] = cat['name']
-        new_pc['category_count'] = 1
-        new_pc['category_page_url'] = cat['category_page_url']
-
-        # Add the new page dict to site_categories
-        SITE_CONF['site_categories'].append(new_pc)
-    
-
-def collect_page_tags(page_vars):
-    """Scans page variables and adds tags to the global SITE_CONF variable.
-
-    Arguments:
-    page_vars -- Variables specified in 'var.json' for the given page.
-    
-    This function is used in collect_page()
-    """
-    global SITE_CONF
-    
-    if 'site_tags' not in SITE_CONF.keys():
-        # Create it
-        SITE_CONF['site_tags'] = []
-    
-    site_tags = SITE_CONF['site_tags']
-
-    # Iterate over the tags
-    for tag in page_vars['page_tags']:
-
-        # Strip the tag name
-        tag_name_stripped = strip_string(tag['name'])
-
-        # Generate 'site_tag_<tag name>
-        list_key_name = 'site_tag_' + tag_name_stripped
-        if list_key_name not in SITE_CONF.keys():
-            SITE_CONF[list_key_name] = []
-
-        tag_list_item = {}
-        tag_list_item['page_vars'] = page_vars
-        SITE_CONF[list_key_name].append(tag_list_item)
-        #print(tag)
-
-        # Generate normal site_tags items
-        add_tag = True
-        for st in site_tags:
-            if st['tag_name'] == tag['name']:
-                add_tag = False
-
-                # Increment the tag count
-                st['tag_count'] += 1
-
-
-        # If the tag doesn't exist, create it
-        if add_tag == True:
-            new_pt = {}
-            new_pt['tag_name'] = tag['name']
-            new_pt['tag_count'] = 1
-
-            new_pt['tag_page_url'] = tag['tag_page_url']
-
-            site_tags.append(new_pt)
-    
-    # Add PAGE_TAGS to SITE_CONF
-    #SITE_CONF['site_tags'] = SITE_TAGS
-
-
-def collect_page(page_vars, page_content):
-    """Collects the contents of a page and it's variables into a dictionary, which
-    is then added to SITE_CONF['site_pages'].
-    
-    Arguments:
-    page_vars -- The page variables
-    page_contents -- The page contents
-    
-    Directly modifies the PAGE_COLLECTION global variable.
-    """
-
-    global SITE_CONF
-
-    if 'site_pages' not in SITE_CONF.keys():
-        SITE_CONF['site_pages'] = []
-
-    SITE_PAGES = SITE_CONF['site_pages']
-
-    # Create a new dict to hold the data
-    pg_dict = {}
-    pg_dict['page_vars'] = page_vars
-    pg_dict['page_content'] = page_content
-
-    # Add to the page
-    SITE_PAGES.append(pg_dict)
-
-    # Also collect the metadata
-                
-    # Make sure the page has categories to avoid errors
-    if 'page_category' in page_vars.keys():
-        collect_page_category(page_vars)
-
-    # Make sure the page has tags to avoid errors
-    if 'page_tags' in page_vars.keys():
-        collect_page_tags(page_vars)
-
-    if 'page_type' in page_vars.keys():
-        collect_page_type(page_vars)
-
-    # Generate list items
-    #print(SITE_CONF['site_page_list_type_articles'])
-
-
-
-
-def build_page(site_conf, page_vars, content):
-    """Build a page using template specified in 'page_vars', and information from 'site_conf' and 'page_vars'.
-    
-    Arguments:
-    site_conf -- Pass the global SITE_CONF variable.
-    page_vars -- Variables specified in 'var.json' for the given page.
-    content   -- The unrendered contents of 'page.html' for a given page.
-    """
-    # Get the template page name
-    template_name = "{}.mustache".format(page_vars['page_template'])
-    base_template_name = "base.mustache"
-
-    # Check the required templates
-    template_ok = True
-    if os.access(os.path.join("templates", template_name), os.R_OK):
-
-        # Grab the page template contents
-        with open(os.path.join("templates", template_name)) as pt:
-            page_template = pt.read();
-    else:
-        template_ok = False
-        failed_template = os.path.join("templates", template_name)
-
-    if os.access(os.path.join("templates", base_template_name), os.R_OK):
-        # Grab the base template contents
-        with open(os.path.join("templates", base_template_name)) as base:
-            base_template = base.read()
-    else:
-        template_ok = False
-        failed_template = os.path.join("templates", base_template_name)
-
-    # If we're still good, render the page
-    if template_ok == True:
-        # Create a combined object for rendering
-        combo_vars = {}
-
-        for k in page_vars:
-            combo_vars[k] = page_vars[k]
-
-        # Add the site variables
-        for c in site_conf:
-            combo_vars[c] = site_conf[c]
-
-        # See what we have so far
-        #print(combo_vars)
-        #print(page_vars)
-
-        # Step 1: render page content
-        combo_vars['page_content'] = content
-        rendered_contents = pystache.render(page_template, combo_vars)
-        #print(rendered_contents)
-
-        # Step 2: render with 'base.mustache'
-        combo_vars['page_content'] = rendered_contents
-        rendered_contents = pystache.render(base_template, combo_vars)
-        #print(rendered_contents)
-
-        # Need to write the page. This is where Pathlib really shines.
-        # Step 1: make output path
-        Path(combo_vars['page_output_path']).mkdir(parents=True, exist_ok=True)
-
-        # Step 2: write the page
-        page_target = os.path.join(combo_vars['page_output_path'], combo_vars['page_file_name']) 
-        with open(page_target, 'w') as p:
-            p.write(rendered_contents)
-
-        # Step 3: copy the assets if there are any
-        if 'page_assets_path' in combo_vars.keys():
-            print("Page asset processing")
-            assets_dir = combo_vars['page_assets_path']
-            assets_output = os.path.join(combo_vars['page_output_path'], 'assets')
-            copyDirectory(assets_dir, assets_output)
-            print("asset path: {}".format(combo_vars['page_assets_path']))
-            print("output path: {}".format(combo_vars['page_output_path']))
-
-
-
-    # If the page template can not be found, tell the user.
-    else:
-        print("Template '{}' not found! Skipping....".format(template_name))
-
-
-def build_category_pages(site_conf):
-    """Builds category pages in 'output/categories/<category_name>', and the
-    main 'output/category.html' list page.
-
-    Arguments:
-    site_conf -- The globe SITE_CONF variable.
-    page_collection -- The globe PAGE_COLLECTION variable.
-
-    Required templates:
-    category_list_page.mustache
-    category_page.mustache
-    page_list_item.mustache
-    """
-
-    # Start by looking for the right templates
-    templates_ok = True
-    cats_found = False
-    category_list_template_name = "category_list_page"
-    category_page_template_name = "category_page"
-    page_list_item_template_name = "page_list_item"
-    if not os.access(os.path.join("templates", category_list_template_name + ".mustache"), os.R_OK):
-
-    # Tell the user what went wrong
-        print("Template '{}' not found!".format(category_list_template_name))
-        templates_ok = False
-
-    if not os.access(os.path.join("templates", category_page_template_name + ".mustache"), os.R_OK):
-        print("Template '{}' not found!".format(category_page_template_name))
-        templates_ok = False
-   
-    # This is the ONLY template file that must be opened and read within this
-    # function.
-    if os.access(os.path.join("templates", page_list_item_template_name + ".mustache"), os.R_OK):
-        with open(os.path.join("templates", page_list_item_template_name + ".mustache")) as t:
-            page_list_item_template = t.read()
-
-    else:
-        print("Template '{}' not found!".format(page_list_item_template_name))
-        templates_ok = False
-
-
-    if templates_ok:
-
-        # Try to collect the page categories
-        #for page in page_collection:
-
-            #page_vars = page['page_vars']
-            # Make sure the page has tags to avoid errors
-            #if 'page_category' in page_vars.keys():
-                #collect_page_category(page_vars)
-
-        # Check if we have page categories to work with
-        if 'site_categories' in site_conf.keys():
-            cats_found = True
-
-            # Need to build page variables to use build_page()
-            page_vars = {}
-            page_vars['page_title'] = "Categories"
-            page_vars['page_template'] = category_list_template_name
-            page_vars['page_output_path'] = "output"
-            page_vars['page_file_name'] = "categories.html"
-
-            # Give the user some variety in templates
-            page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-            page_vars["page_year"] = datetime.now().strftime("%Y")
-            page_vars["page_month"] = datetime.now().strftime("%m")
-            page_vars["page_day"] = datetime.now().strftime("%d")
-            page_vars["page_hour"] = datetime.now().strftime("%H")
-            page_vars["page_hour_12"] = datetime.now().strftime("%I")
-            page_vars["page_minute"] = datetime.now().strftime("%M")
-
-            # Run the build function
-            build_page(site_conf, page_vars, "")
-
-            # Now for the crazy part: Getting the individual cat pages to generate
-            for cat in site_conf['site_categories']:
-                category_list_key = 'site_category_' + strip_string(cat['category_name'])
-                page_vars['page_title'] = cat['category_name']
-                page_vars['category_name'] = cat['category_name']
-                page_vars['page_template'] = category_page_template_name
-                page_vars['page_output_path'] = "output/categories"
-                page_vars['page_file_name'] = strip_string(cat['category_name']) + ".html"
-                page_vars['page_datetime'] = datetime.now().strftime("%Y-%m-%d %H:%M")
-                page_vars["page_year"] = datetime.now().strftime("%Y")
-                page_vars["page_month"] = datetime.now().strftime("%m")
-                page_vars["page_day"] = datetime.now().strftime("%d")
-                page_vars["page_hour"] = datetime.now().strftime("%H")
-                page_vars["page_hour_12"] = datetime.now().strftime("%I")
-                page_vars["page_minute"] = datetime.now().strftime("%M")
-                page_vars['category_pages'] = sort_pages_by_date(SITE_CONF[category_list_key])
-                build_page(site_conf, page_vars, "")
-
-               
-
-        # Tell the user there are no categories
-        #else:
-        #    print("No page categories found! Skipping category page generation."
-
-    else:
-        print("Unable to generate category pages!")
-
-    if cats_found == False:
-        print("No page categories found. Skipping...")
-
-
-def build_tag_pages(site_conf):
-    """Builds tag pages in 'output/tags/<tag_name>', and the main 'output/tags.html' list page.
-
-    Arguments:
-    site_conf -- The globe SITE_CONF variable.
-
-    Required templates:
-    tag_list_page.mustache
-    tag_page.mustache
-    page_list_item.mustache
-    """
-
-    # Start by looking for the right templates
-    templates_ok = True
-    tags_found = False
-    tag_list_template_name = "tag_list_page"
-    tag_page_template_name = "tag_page"
-    page_list_item_template_name = "page_list_item"
-    if not os.access(os.path.join("templates", tag_list_template_name + ".mustache"), os.R_OK):
-
-        # Tell the user what went wrong
-        print("Template '{}' not found!".format(tag_list_template_name))
-        templates_ok = False
-
-    if not os.access(os.path.join("templates", tag_page_template_name + ".mustache"), os.R_OK):
-        print("Template '{}' not found!".format(tag_page_template_name))
-        templates_ok = False
-   
-    # This is the ONLY template file that must be opened and read within this
-    # function.
-    if os.access(os.path.join("templates", page_list_item_template_name + ".mustache"), os.R_OK):
-        with open(os.path.join("templates", page_list_item_template_name + ".mustache")) as t:
-            page_list_item_template = t.read()
-
-    else:
-        print("Template '{}' not found!".format(page_list_item_template_name))
-        templates_ok = False
-
-    if templates_ok:
-        # Collect the tags
-        #print(PAGE_COLLECTION)
-
-        # By this point, collect_page() should have already collected all page
-        # tags.
-
-        # Check if we have page tags to work with
-        if 'site_tags' in site_conf.keys():
-            tags_found = True
-            # Take a look at PAGE_TAGS and see what happened
-            #print(SITE_CONF)
-
-            # Now generate the main tags.html page
-
-            # Generate the content to feed into build_page()
-            #tags_page_content = pystache.render(tag_list_template, site_conf)
-            #print(tags_page_content)
-
-            # Need to build page variables to use build_page()
-            page_vars = {}
-            page_vars['page_title'] = "Tags"
-            page_vars['page_template'] = tag_list_template_name
-            page_vars['page_output_path'] = "output"
-            page_vars['page_file_name'] = "tags.html"
-            page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-            page_vars["page_year"] = datetime.now().strftime("%Y")
-            page_vars["page_month"] = datetime.now().strftime("%m")
-            page_vars["page_day"] = datetime.now().strftime("%d")
-            page_vars["page_hour"] = datetime.now().strftime("%H")
-            page_vars["page_hour_12"] = datetime.now().strftime("%I")
-            page_vars["page_minute"] = datetime.now().strftime("%M")
-            build_page(site_conf, page_vars, "")
-
-            # Now for the crazy part: Getting the individual tag pages to
-            # generate.
-            for tag in site_conf['site_tags']:
-                page_vars['page_title'] = tag['tag_name']
-                page_vars['page_template'] = tag_page_template_name
-                page_vars['page_output_path'] = "output/tags"
-                page_vars['page_file_name'] = strip_string(tag['tag_name']) + ".html"
-                page_vars["page_datetime"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-                page_vars["page_year"] = datetime.now().strftime("%Y")
-                page_vars["page_month"] = datetime.now().strftime("%m")
-                page_vars["page_day"] = datetime.now().strftime("%d")
-                page_vars["page_hour"] = datetime.now().strftime("%H")
-                page_vars["page_hour_12"] = datetime.now().strftime("%I")
-                page_vars["page_minute"] = datetime.now().strftime("%M")
-               
-                # Use the existing site_tag_<tag name> page list.
-                page_list_key = 'site_tag_' + strip_string(tag['tag_name'])
-                page_list = site_conf[page_list_key]
-
-                # Need to sort tag pages by date.
-                page_list = sort_pages_by_date(page_list)
-
-                # Set the remaining page variables and build the page.
-                page_vars['tag_pages'] = page_list
-                page_vars['tag_name'] = tag['tag_name']
-                build_page(site_conf, page_vars, "")
-           
-
-    else:
-        print("Unable to generate tag pages!")
-
-    if not tags_found:
-        print("No page tags found. Skipping...")
-    
-
-
-# Run program
-input_handler(HELP_TXT, VERSION)
+        print("Invalid command")
+        print("Try 'help'")
+else:
+    print("Must provide a command")
+    print("Try 'help'")
+    #in_file = sys.argv[1]
