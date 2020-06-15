@@ -31,4 +31,4 @@ There isn't any proper documentation available at the moment, but it's only abou
 
 ## This is NOT a complete solution!
 
-Site Damnit only builds out the HTML files of your site. If you want to pre-process JavaScript or CSS files, you'll have to install additional tools and write your own custom build script. The included build script, `server.sh`, should provide a decent example to build on. Terser and Sass have to be installed to make the script work as-is.
+Site Damnit only builds out the HTML files of your site. If you want to pre-process JavaScript or CSS files, you'll have to install additional tools and write your own custom build script. The included build script, `server.sh`, should provide a decent example to build on. The example site is set up to use [Bulma](https://bulma.io/) and [Font Awesome Free](https://github.com/FortAwesome/Font-Awesome) via Terser and Sass.
