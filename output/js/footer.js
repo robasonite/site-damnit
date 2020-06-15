@@ -1,0 +1,1 @@
+!function(){for(var e=document.links,t=0,n=e.length;t<n;t++)e[t].hostname!=window.location.hostname&&(e[t].target="_blank")}();document.addEventListener("DOMContentLoaded",()=>{let e=document.getElementById("mobile-menu-button"),t=document.getElementById("responsiveNav");e.addEventListener("click",()=>{e.classList.toggle("is-active");t.classList.toggle("is-active")})});
