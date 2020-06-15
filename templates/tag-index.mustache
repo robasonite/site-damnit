@@ -1,0 +1,20 @@
+{{> base_head}}
+<header class="header section">
+  <div class="container">
+    <h1 class="title">{{title}}</h1>
+  </div>
+</header>
+<section class="section">
+  <div class="container">
+    <article>
+      <ul>
+      {{#siteTags}}
+      <li class="article-list-item">
+        <h2 class="title is-3"><a href="{{url}}">{{name}}:</a> <span class="article-count">{{count}} articles</span></h2>
+      </li>
+      {{/siteTags}}
+      </ul>
+    </article>
+  </div>
+</section>
+{{> base_tail}}

@@ -1,0 +1,30 @@
+{{> base_head}}
+<section class="header hero is-brand">
+  <div class="hero-body">
+    <div class="container has-text-centered">
+      <h1 class="title">
+        {{{content}}}
+      </h2>
+    </div>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    <ul>
+    {{#sitePages}}
+      {{#article}}
+      <li class="article-list-item">
+        <article>
+          <h2 class="title is-3"><a href="{{{url}}}">{{title}}</a></h2>
+          {{> article_meta}}
+          <div class="article-summary">
+          {{{summary}}}
+          </div>
+        </article>
+      </li>
+      {{/article}}
+    {{/sitePages}}
+    </ul>
+  </div>
+</section>
+{{> base_tail}}

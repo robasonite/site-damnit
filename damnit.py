@@ -17,13 +17,13 @@ OUTPUT = os.path.join(CWD, "output")
 CONTENT = os.path.join(CWD, "content")
 
 SITE_VARS = {}
-SITE_VARS['siteName'] = "Robasonite"
-SITE_VARS['siteAuthor'] = "Robert J Kight"
+SITE_VARS['siteName'] = "Your site name here"
+SITE_VARS['siteAuthor'] = "Joe Smoe"
 SITE_VARS['siteAbsoluteUrls'] = False
 SITE_VARS['siteGenLunrJson'] = False
-SITE_VARS['siteDomain'] = "www.robasonite.com"
-SITE_VARS['siteDescription'] = "Linux, code, and other nerdy fun"
-SITE_VARS['siteDefaultKeywords'] = "linux, code, tutorials, scripts"
+SITE_VARS['siteDomain'] = "www.your-domain-here.com"
+SITE_VARS['siteDescription'] = "Enter a default description here."
+SITE_VARS['siteDefaultKeywords'] = "default, key, words, here"
 
 
 

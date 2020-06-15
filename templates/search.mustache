@@ -1,0 +1,20 @@
+[
+{{#sitePages}}
+  {{#article}}
+  {
+    "title": "{{title}}",
+    "categories": [
+      {{#categories}}
+      "{{name}}",
+      {{/categories}}
+    ],
+    "tags": [
+      {{#tags}}
+      "{{name}}",
+      {{/tags}}
+    ],
+    "body": "{{body}}"
+  },
+  {{/article}}
+{{/sitePages}}
+]

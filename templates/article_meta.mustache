@@ -1,0 +1,21 @@
+<div class="article-meta columns">
+  <div class="column">
+    <time datetime="{{year}}-{{month}}-{{day}} {{hour}}:{{minute}}">{{monthName}} {{day}}, {{year}}</time>
+  </div>
+  <div class="column">
+    Tags: 
+    <div class="container">
+      {{#tags}}
+      <span class="tag is-medium"><a href="{{{link}}}">{{name}}</a></span>
+      {{/tags}}
+    </div>
+  </div>
+  <div class="column">
+    Category: 
+    <div class="container">
+      {{#categories}}
+      <span class="tag is-medium"><a href="{{{link}}}">{{name}}</a></span>
+      {{/categories}}
+    </div>
+  </div>
+</div>
