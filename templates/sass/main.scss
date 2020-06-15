@@ -7,4 +7,30 @@
 // Font awesome
 @use 'fa';
 
+// Custom burger
+// Uses FontAwesome
+.custom-burger {
+  // Make is hidden by default
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 3.5rem;
+  height: 3.5rem;
+  text-align: center;
+  i {
+    font-size: 2.4rem;
+    margin-top: 0.5rem;
+  }
+}
+
+// Hide the hamburger when not needed
+@media (max-width: 1023px) {
+  .custom-burger {
+     display: block;
+  }
+}
+
+
 // Put your custom CSS of Sass rules here
+
