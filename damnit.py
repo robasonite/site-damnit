@@ -928,7 +928,7 @@ def build_site():
     # NOTE: Because of the way copy_path() works, this bit of code has to fire
     # first.
 
-    # Copy assets from 'content' to 'output'
+    # Copy template static files to output.
     src = os.path.join(TEMPLATES, 'static')
     if os.access(src, os.R_OK):
         print("Copying template assets '{}'...".format(src))
