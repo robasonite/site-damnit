@@ -46,3 +46,8 @@ Speaking of themes, they should probably get their own dedicated directories and
 # 2019-10-30 Code cleanup and organization tweaks
 
 I tweaked `collect_page()` and associated functions to also generate `site_tag_<tag name>` and `site_category_<category name>`. Then I modified `build_tag_pages()` and `build_category_pages()` to use the new page lists. Also fixed tag and category list item duplication on link lists, and now all page lists are sorted by date. Don't know what I'm going to do about actually writing content. The project only supports raw markup at the moment, and LWMLs like Markdown and friends have too many weaknesses. I don't want to pollute my content files with "short codes" and the like just so I can access bits of unsupported markup. Maybe they are a necessary evil? Or maybe I should just write all of my content in HTML, which of course has support for everything in HTML5.
+
+
+# 2020-06-30
+
+Removed the the absolute URL option from the configuration. Prepped project for upload to GitHub.

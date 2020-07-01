@@ -13,12 +13,12 @@ The goal of this project was to build a basic static site generator with as few 
 I've used various static site generators to throw together small sites and blogs. The same issues kept popping up over and over:
 
 * Dependency X can't be installed.
-* Embedded "shortcut codes" make migrating content difficult.
-* "It's not a bug, it's a feature! RTFM man!" say community members and/or developers.
-* Themes with templates that include other templates that include other templates that include other templates that include....
-* Plugin/extension/theme developers that don't update their stuff to work with the latest stable release of XYZ.
-* Deceptively simple installation and setup instructions. "Just run `npm install xyz`, and instant website!"
-* Support for either all of the features I don't need, or none of the ones I do.
+* Embedded "shortcut codes" made migrating content difficult.
+* "It's not a bug, it's a feature! RTFM man!" said community members and/or developers.
+* Themes with templates that included other templates that included other templates that included other templates that included....
+* Plugin/extension/theme developers that didn't update their stuff to work with the latest stable release of XYZ.
+* Deceptively simple installation and setup instructions. *"Just run `npm install xyz`, and instant website!"* Sound familiar?
+* Silent failures and missing output directories.
 
 
 Just about every static site generator I've tried has had these problems (and many more), so I just wrote my own.
@@ -31,4 +31,4 @@ There isn't any proper documentation available at the moment, but it's only abou
 
 ## This is NOT a complete solution!
 
-Site Damnit only builds out the HTML files of your site. If you want to pre-process JavaScript or CSS files, you'll have to install additional tools and write your own custom build script. The included build script, `server.sh`, should provide a decent example to build on. The example site is set up to use [Bulma](https://bulma.io/) and [Font Awesome Free](https://github.com/FortAwesome/Font-Awesome) via Terser and Sass.
+Site Damnit only builds out the HTML files of your site. That's *all* it will ever do. If you want to pre-process JavaScript or CSS files, you'll have to install additional tools and write your own custom build script. The included build script, `server.sh`, should provide a decent example to build on. The example site is set up to use [Bulma](https://bulma.io/) and [Font Awesome Free](https://github.com/FortAwesome/Font-Awesome) via Terser and Sass.
