@@ -15,7 +15,7 @@ keywords:
  - keywords
 ---
 
-Here is an example article. If you don't know how Commonmark or Markdown works, check [this page][md-help] for a guide.
+Here is an example article. If you don't know how CommonMark or Markdown works, check [this page][md-help] for a guide.
 
 
 [md-help]: https://spec.commonmark.org/0.29/
