@@ -18,25 +18,11 @@ CONTENT = os.path.join(CWD, "content")
 
 SITE_VARS = {}
 SITE_VARS['siteName'] = "Your site name here"
-SITE_VARS['siteAuthor'] = "Joe Smoe"
-SITE_VARS['siteAbsoluteUrls'] = False
+SITE_VARS['siteAuthor'] = "Your Name Here"
 SITE_VARS['siteGenLunrJson'] = False
-SITE_VARS['siteDomain'] = "www.your-domain-here.com"
 SITE_VARS['siteDescription'] = "Enter a default description here."
 SITE_VARS['siteDefaultKeywords'] = "default, key, words, here"
-
-
-
-# Get site root before anything else
-def getSiteRoot(site_vars):
-    if site_vars['siteAbsoluteUrls']:
-        root = site_vars['siteDomain'] + '/'
-    else:
-        root = '/'
-
-    return root
-
-SITE_VARS['siteRoot'] = getSiteRoot(SITE_VARS)
+SITE_VARS['siteRoot'] = '/'
 
 
 # Functions
