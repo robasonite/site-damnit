@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# Copyright (C) 2020 Robert Kight.
+#
+# This program is free and open source software. Read LICENSE for details.
+#
+import CONFIG 
 import pystache # external
 import commonmark # external
 import yaml # external? Fedora 30 seemed to install it by default, but not Ubuntu
@@ -10,19 +15,15 @@ import errno
 import json
 from datetime import datetime
 
-# For pystache
+# Rename the config dict to keep stuff from breaking.
+SITE_VARS = CONFIG.SITE_VARS
+
+
+# Define standard directories. Don't touch unless you know what you're doing.
 CWD = os.getcwd()
 TEMPLATES = os.path.join(CWD, "templates")
 OUTPUT = os.path.join(CWD, "output")
 CONTENT = os.path.join(CWD, "content")
-
-SITE_VARS = {}
-SITE_VARS['siteName'] = "Your site name here"
-SITE_VARS['siteAuthor'] = "Your Name Here"
-SITE_VARS['siteGenLunrJson'] = False
-SITE_VARS['siteDescription'] = "Enter a default description here."
-SITE_VARS['siteDefaultKeywords'] = "default, key, words, here"
-SITE_VARS['siteRoot'] = '/'
 
 
 # Functions
