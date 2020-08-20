@@ -396,7 +396,7 @@ def read_page(in_file):
                     new_list.append(n)
 
                 page_dict[key] = new_list
-                print(page_dict)
+                #print(page_dict)
 
     return page_dict
 
