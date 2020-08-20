@@ -365,6 +365,7 @@ def read_page(in_file):
     page_dict['categories'] = new_cats
 
     # Add keywords and description if they don't exist
+    # The description is used for <meta> tags in the generated HTML
     if 'description' not in page_dict:
         # Try to use the summary
         if 'summary' in page_dict:
@@ -376,7 +377,26 @@ def read_page(in_file):
 
     if 'keywords' not in page_dict:
         page_dict['keywords'] = SITE_VARS['siteDefaultKeywords']
+    
 
+    # We need to expose plain list items to Mustache.
+    # List of reserve YAML fields
+    reserved_fields = ['tags', 'categories', 'keywords']
+    
+    # Iterate over page_dict keys
+    for key, value in page_dict.items():
+        # If the key is NOT in the reserved_fields, check the value
+        if key not in reserved_fields:
+            if type(value) is list:
+                new_list = []
+
+                for i in value:
+                    n = {}
+                    n['name'] = i
+                    new_list.append(n)
+
+                page_dict[key] = new_list
+                print(page_dict)
 
     return page_dict
 
