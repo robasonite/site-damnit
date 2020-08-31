@@ -3,6 +3,12 @@
 Got Python, will build site.
 
 
+## Latest update 
+# 2020-08-30
+
+I almost forgot this file existed! The configuration file is now a Python dictionary stored in `CONFIG.py`. I decided to move away from JSON because Python dictionaries don't require any extra processing. Just `import` and go! Also decided that Commonmark can stay as the LWML because it supports embedded HTML. Scrapped theme management because it's actually detrimental. Websites are supposed to have their own unique look and feel. Those who want to switch between themse periodically can simply replace the `templates` directory. Also, I decided to start putting the latest devlog entry at the top of README.
+
+
 ## Project goal
 
 The goal of this project was to build a basic static site generator with as few dependencies as possible. Just Python 3, [PyYAML](https://pyyaml.org/wiki/PyYAMLDocumentation), [Commonmark](https://pypi.org/project/commonmark/), and [Pystache](https://github.com/defunkt/pystache).

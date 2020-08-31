@@ -2,9 +2,9 @@
 
 I have decided to do something incredibly stupid and time consuming by "sane person" standards, but something that will end up being useful nonetheless. I have a Hugo-powered blog I haven't updated in a few months. When I tried to update from version 0.55.6 to 0.58.3, my home page template stopped working. I opened an issue on GitHub and **bep**, one of the developers working on Hugo, immediately closed it. His only message was to check the documentation, which I had already searched through. That's when I realized something.
 
-Right now, as with most software, I rely on other people to write it. For desktop apps like Vim, Gimp, Inkscape, and desktop environments like XFCE, there is some semblance of leadership in the community and support from developers working on multiple distros. Such projects have been around for a long enough time to gather some amount of stability. They don't just sprout new features over night, and they typically don't break things that affect a user's workflow or clash the user's chosen platform. As a result of steady but careful progress, these projects can frequently be found in the package repositories of a typical GNU/Linux distribution.
+Right now, as with most software, I rely on other people to write it. For desktop apps like Vim, Gimp, Inkscape, and desktop environments like XFCE, there is some semblance of leadership in the community and support from developers working on multiple distros. Such projects have been around for a long enough time to gather some amount of stability. They don't just sprout new features over night, and they typically don't break things or clash with the user's chosen platform. As a result of steady but careful progress, these projects can frequently be found in the package repositories of a typical GNU/Linux distribution.
 
-The same can not be said for most of the static site generators listed on the [StaticGen](https://www.staticgen.com) website. I actually switched away from Pelican a couple of years ago specifically because of template breakage between releases among other problems. Problems that it seems the rest of the people on Internet aren't keen on solving any time soon. Sometimes if you want something done right, you have to do it yourself. So I'm writing it right now in Python.
+The same can not be said for most of the static site generators listed on the [StaticGen](https://www.staticgen.com) website. I actually switched away from Pelican a couple of years ago specifically because of template breakage between releases among other problems. Problems that it seems the rest of the people on the Internet aren't keen on solving any time soon. Sometimes if you want something done right, you have to do it yourself. So I'm writing it right now in Python.
 
 Why Python? Because it will be quicker to implement. There are a few minor problems with Python though. First, some of the functions are in odd places. The function to make a new directory is in the `os` module, but the function to copy files is in the `shutils` module. And then there are problems with speed. Fortunately, Cython and the `multiprocessing` module can help. I also discovered that there are ways to package Python apps for distribution. The question is, how many more warts like `shutils` vs `os` am I going to discover?
 
@@ -51,3 +51,8 @@ I tweaked `collect_page()` and associated functions to also generate `site_tag_<
 # 2020-06-30
 
 Removed the the absolute URL option from the configuration. Prepped project for upload to GitHub.
+
+
+# 2020-08-30
+
+I almost forgot this file existed! The configuration file is now a Python dictionary stored in `CONFIG.py`. I decided to move away from JSON because Python dictionaries don't require any extra processing. Just `import` and go! Also decided that Commonmark can stay as the LWML because it supports embedded HTML. Scrapped theme management because it's actually detrimental. Websites are supposed to have their own unique look and feel. Those who want to switch between themse periodically can simply replace the `templates` directory. Also, I decided to start putting the latest devlog entry at the top of README.
