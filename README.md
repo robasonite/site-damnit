@@ -3,10 +3,21 @@
 Got Python, will build site.
 
 
-## Latest update 
-# 2020-08-30
+## Features
 
-I almost forgot this file existed! The configuration file is now a Python dictionary stored in `CONFIG.py`. I decided to move away from JSON because Python dictionaries don't require any extra processing. Just `import` and go! Also decided that Commonmark can stay as the LWML because it supports embedded HTML. Scrapped theme management because it's actually detrimental. Websites are supposed to have their own unique look and feel. Those who want to switch between themse periodically can simply replace the `templates` directory. Also, I decided to start putting the latest devlog entry at the top of README.
+- Per-page asset directories and easy asset linking
+- Markdown or HTML for writing content
+- Mustache for templates
+- YAML for frontmatter and configuration
+- Embeddable per-page custom frontmatter
+
+
+
+## Latest update
+
+### 2020-09-17
+
+Decided to use YAML for the config file. That way, tools like `cx_Freeze` can be used to generate stand-alone executables that don't require Python to be installed. The progam now has the ability to generate a default configuration file if it doesn't find one.
 
 
 ## Project goal
@@ -32,7 +43,7 @@ Just about every static site generator I've tried has had these problems (and ma
 
 ## No *proper* documentation yet
 
-There isn't any proper documentation available at the moment, but it's only about 1000 lines long. Look at the included example site (*content* and *templates* directories) and you should catch on pretty quick. For configuration, look at the `SITE_VARS` section towards the top of `damnit.py`.
+There isn't any proper documentation available at the moment, but it's only about 1000 lines long. Look at the included example site (*content* and *templates* directories) and you should catch on pretty quick. For configuration, look at `config.yaml`. Anything you add to that file can be used in your template and content files, as long as it's valid YAML.
 
 
 ## This is NOT a complete solution!

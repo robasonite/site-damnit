@@ -60,4 +60,4 @@ I almost forgot this file existed! The configuration file is now a Python dictio
 
 # 2020-09-17
 
-Decided to use YAML for the config file. That way, tools like `cx_Freeze` could be used to generate stand-alone executables that don't require Python to be installed. The progam now has the ability to generate a default configuration file if it doesn't find one.
+Decided to use YAML for the config file. That way, tools like `cx_Freeze` can be used to generate stand-alone executables that don't require Python to be installed. The progam now has the ability to generate a default configuration file if it doesn't find one.
