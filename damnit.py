@@ -17,6 +17,14 @@ import errno
 import json
 from datetime import datetime
 
+VERSION = """Site Damnit v0.0.2
+Copyright 2020 Robert Kight
+
+This software is made available under the terms and conditions of the MIT
+license. See LICENSE file for details.
+"""
+
+
 # Rename the config dict to keep stuff from breaking.
 SITE_VARS = {}
 
@@ -990,6 +998,7 @@ def display_help():
     """
     print("Valid commands are:")
     print("build -- Build the site in the current directory")
+    print("version -- Print version information and exit")
     print("help  -- Show this message")
 
 
@@ -1009,6 +1018,8 @@ def main():
                 build_site()
             elif sys.argv[1] == 'help':
                 display_help()
+            elif sys.argv[1] == 'version':
+                print(VERSION)
             else:
                 print("Invalid command")
                 print("Try 'help'")
