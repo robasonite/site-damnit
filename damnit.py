@@ -105,6 +105,7 @@ def copy_path(src, dest):
     src -- The file or directory to be copied.
     dest -- The destination to copy to.
     """
+
     try:
         shutil.copytree(src, dest)
     except OSError as e:
