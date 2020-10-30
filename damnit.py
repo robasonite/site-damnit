@@ -32,7 +32,15 @@ siteDefaultKeywords: default, key, words, here
 siteDescription: Enter a default description here.
 siteGenLunrJson: false
 siteName: Your site name here
+
+# Don't change this unless you know what you're doing.
 siteRoot: /
+
+# Can be either 'number' or 'alpha'
+siteTagSort: number
+
+# Can be either 'number' or 'alpha'
+siteCategorySort: number
 """
 
 
@@ -783,6 +791,19 @@ def cat_walker(page_list, site_vars):
                         c['count'] += 1
                         c['pages'].append(p)
 
+    # Alpha sort by default
+    def sortFunc(e):
+        return e['name']
+
+    cat_dict_list.sort(key=sortFunc)
+
+    # Sort the list of categories depending on config options.
+    if site_vars['siteCategorySort'] == 'number':
+        def sortFunc(e):
+            return e['count']
+
+        cat_dict_list.sort(reverse=True, key=sortFunc)
+
 #    for c in cat_dict_list:
 #        print("cat name: {}".format(c['name']))
 #        print("cat count: {}".format(c['count']))
@@ -853,6 +874,19 @@ def tag_walker(page_list, site_vars):
                         t['pages'].append(p)
                         t['count'] = len(t['pages'])
 
+    # Alpha sort by default
+    def sortFunc(e):
+        return e['name']
+
+    tag_dict_list.sort(key=sortFunc)
+
+    # Now sort the tag list depending on configuration options
+    if site_vars['siteTagSort'] == 'number':
+        def sortFunc(e):
+            return e['count']
+
+        tag_dict_list.sort(reverse=True, key=sortFunc)
+
 #    for t in tag_dict_list:
 #        print("tag name: {}".format(t['name']))
 #        print("tag count: {}".format(t['count']))
@@ -862,6 +896,7 @@ def tag_walker(page_list, site_vars):
 
     # Return the new tag list
     return tag_dict_list
+
 
 def gen_cat_index():
     """ Generates data for the main category page index. Gives write_page() the correct data to render the page.
@@ -972,19 +1007,23 @@ def build_site():
         genLunrJson(SITE_VARS['sitePages']['all'])
 
 
-    # Write the tag index page
-    write_page(gen_tag_index())
+    if len(SITE_VARS['siteTags']) > 0:
+        # Write individual tag pages
+        for t in SITE_VARS['siteTags']:
+            write_page(t)
 
-    # Write individual tag pages
-    for t in SITE_VARS['siteTags']:
-        write_page(t)
+        # Write the tag index page
+        write_page(gen_tag_index())
 
-    # Write the category pages
-    for c in SITE_VARS['siteCategories']:
-        write_page(c)
 
-    # Category index page
-    write_page(gen_cat_index())
+    # Only generate if there are categories to write.
+    if len(SITE_VARS['siteCategories']) > 0:
+        # Write the category pages
+        for c in SITE_VARS['siteCategories']:
+            write_page(c)
+
+        # Category index page
+        write_page(gen_cat_index())
 
     # Archive pages
     write_archive_pages(SITE_VARS['siteArticleArchive'])
@@ -1012,21 +1051,31 @@ def main():
 
         SITE_VARS = yaml.full_load(contents)
 
-        # Then run the program
-        if len(sys.argv) > 1:
-            if sys.argv[1] == 'build':
-                build_site()
-            elif sys.argv[1] == 'help':
-                display_help()
-            elif sys.argv[1] == 'version':
-                print(VERSION)
-            else:
-                print("Invalid command")
-                print("Try 'help'")
+        # Check the tag and category sorting options for valid values.
+        if SITE_VARS['siteTagSort'] != 'number' and SITE_VARS['siteTagSort'] != 'alpha':
+            print("Config value 'siteTagSort' is not valid!")
+            print("Please specify 'number' or 'alpha'")
+
+        elif SITE_VARS['siteTagSort'] != 'number' and SITE_VARS['siteTagSort'] != 'alpha':
+            print("Config value 'siteTagSort' is not valid!")
+            print("Please specify 'number' or 'alpha'")
+
         else:
-            print("Must provide a command")
-            print("Try 'help'")
-            #in_file = sys.argv[1]
+            # Then run the program.
+            if len(sys.argv) > 1:
+                if sys.argv[1] == 'build':
+                    build_site()
+                elif sys.argv[1] == 'help':
+                    display_help()
+                elif sys.argv[1] == 'version':
+                    print(VERSION)
+                else:
+                    print("Invalid command")
+                    print("Try 'help'")
+            else:
+                print("Must provide a command")
+                print("Try 'help'")
+                #in_file = sys.argv[1]
 
     else:
         print("Config file not found! Attempting to generate one.")
