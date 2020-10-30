@@ -11,7 +11,6 @@ import commonmark # external
 import yaml # external? Fedora 30 seemed to install it by default, but not Ubuntu
 import sys
 import os
-import pprint
 import shutil
 import errno
 import json
