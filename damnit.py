@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Site Damnit v0.0.2
+# Site Damnit v0.0.3
 #
 # Copyright (C) 2020 Robert Kight.
 #
@@ -16,7 +16,7 @@ import errno
 import json
 from datetime import datetime
 
-VERSION = """Site Damnit v0.0.2
+VERSION = """Site Damnit v0.0.3
 Copyright 2020 Robert Kight
 
 This software is made available under the terms and conditions of the MIT
