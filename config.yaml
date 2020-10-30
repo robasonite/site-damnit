@@ -3,4 +3,12 @@ siteDefaultKeywords: default, key, words, here
 siteDescription: Enter a default description here.
 siteGenLunrJson: false
 siteName: Your site name here
+
+# Don't change this unless you know what you're doing.
 siteRoot: /
+
+# Can be either 'number' or 'alpha'
+siteTagSort: number
+
+# Can be either 'number' or 'alpha'
+siteCategorySort: number
