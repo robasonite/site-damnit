@@ -13,9 +13,14 @@ Got Python, will build site.
 
 
 
-## Latest update
+## Latest updates
 
-### 2020-09-17
+### 2021-09-17
+
+Added another execption to page processing for `rss.md`. A template and example "stub page" have been added. This is an easy "poor man's" way of generating RSS feeds without touching the existing code. Also renamed `index.md` to `home.md`. If more RSS feeds are required, the section to change starts at line #580. I'm looking into a way to incorporate "page processing exceptions" into the YAML config file.
+
+
+### 2021-09-17
 
 Decided to use YAML for the config file. That way, tools like `cx_Freeze` can be used to generate stand-alone executables that don't require Python to be installed. The progam now has the ability to generate a default configuration file if it doesn't find one.
 

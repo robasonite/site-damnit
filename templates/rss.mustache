@@ -1,0 +1,21 @@
+<!-- vim: set filetype=xml: -->
+<!-- Template: rss -->
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+	<channel>
+		<title>{{siteName}}</title>
+		<link>{{siteURL}}</link>
+		<description>{{{siteDescription}}}</description>
+  {{#sitePages}}
+    {{#article}}
+	  <item>
+		<title>{{title}}</title>
+    <link>{{siteURL}}{{{url}}}</link>
+		<description>{{{summary}}}</description>
+	  </item>
+    {{/article}}
+  {{/sitePages}}
+	</channel>
+</rss>
+  {{{content}}}
+<!-- END: rss -->

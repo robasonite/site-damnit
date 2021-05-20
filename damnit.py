@@ -578,10 +578,15 @@ def content_walker(content_dir):
 
 
                     # Need to keep tack of output path
-                    if str(f) == 'index.md':
-
+                    if str(f) == 'home.md' or str(f) == 'rss.md':
                         # Need to make a small exception for the home page
-                        output_path = str(os.path.join(subdir, "index.html"))
+                        if str(f) == 'home.md':
+                          output_path = str(os.path.join(subdir, "index.html"))
+
+                        # And the main Article rss feed
+                        if str(f) == 'rss.md':
+                          output_path = str(os.path.join(subdir, "index.rss"))
+
                     else:
                         output_path = str(os.path.join(subdir, slug, "index.html"))
 
