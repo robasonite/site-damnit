@@ -1,3 +1,13 @@
+# 2021-09-17 RSS is here. Well, sort of.
+
+Added another execption to page processing for `rss.md`. A template and example "stub page" have been added. This is an easy "poor man's" way of generating RSS feeds without touching the existing code. Also renamed `index.md` to `home.md`. If more RSS feeds are required, the section to change starts at line #580. I'm looking into a way to incorporate "page processing exceptions" into the YAML config file.
+
+
+# 2021-09-17
+
+Decided to use YAML for the config file. That way, tools like `cx_Freeze` can be used to generate stand-alone executables that don't require Python to be installed. The progam now has the ability to generate a default configuration file if it doesn't find one.
+
+
 # 2019-10-14 And so it begins
 
 I have decided to do something incredibly stupid and time consuming by "sane person" standards, but something that will end up being useful nonetheless. I have a Hugo-powered blog I haven't updated in a few months. When I tried to update from version 0.55.6 to 0.58.3, my home page template stopped working. I opened an issue on GitHub and **bep**, one of the developers working on Hugo, immediately closed it. His only message was to check the documentation, which I had already searched through. That's when I realized something.
