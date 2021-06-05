@@ -222,6 +222,11 @@ The special `{{assets}}` variable allows easier access to page assets without ha
 Page *types* are how Site Damnit separates pages into internal lists. The blog-aware features rely on the type `article` when generating category, tag, and archive pages. The `base_head.mustache` file is an example of how one of these internal lists can be used to auto-generate a menu. Pages of the same type can use different templates for more flexibility.
 
 
+### Step 5: Generate
+
+Once you get done adding content, modifying/adding/removing templates, and customizing your CSS, run `python damnit.py build`. Site Damnit will generate an output directory that you can copy to a server any way you see fit. **Do not store ANYTHING in the output directory**! Site Damnit erases the contents of this directory every time it runs the `build` command. There is no cache or database.
+
+
 ## No *proper* documentation yet
 
 There isn't any proper documentation available at the moment, but it's only about 1000 lines long. Look at the included example site (*content* and *templates* directories) and you should catch on pretty quick. For configuration, look at `config.yaml`. Anything you add to that file can be used in your template and content files, as long as it's valid YAML.
