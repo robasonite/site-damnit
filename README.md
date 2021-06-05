@@ -15,9 +15,9 @@ Got Python, will build site.
 
 ## Latest update
 
-### 2021-05-19 RSS is here. Well, sort of.
+### 2021-06-05:
 
-Added another execption to page processing for `rss.md`. A template and example "stub page" have been added. This is an easy "poor man's" way of generating RSS feeds without touching the existing code. Also renamed `index.md` to `home.md`. If more RSS feeds are required, the section to change starts at line #580. I'm looking into a way to incorporate "page processing exceptions" into the YAML config file.
+Version bump to 0.0.4. Added a "Getting Started" section to the README. Added a new variable to `config.yaml` to enable or diable blog mode. Setting `blogMode: false` disables the generation of tag, category, and archive pages.
 
 
 
