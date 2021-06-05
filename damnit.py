@@ -29,7 +29,7 @@ import errno
 import json
 from datetime import datetime
 
-VERSION = """Site Damnit v0.0.3
+VERSION = """Site Damnit v0.0.4
 Copyright 2020 Robert Kight
 
 This software is made available under the terms and conditions of the MIT
