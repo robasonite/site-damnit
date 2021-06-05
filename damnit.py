@@ -980,23 +980,19 @@ def build_site():
     #for p in page_list:
     #   print(p['date'])
 
-    tag_list = tag_walker(page_list, SITE_VARS)
-#    for t in tag_list:
-#        print(t['name'])
-#        for p in t['pages']:
-#            print(p['date'])
-#
-#        print("")
+   
+    if (SITE_VARS['blogMode']):
+        tag_list = tag_walker(page_list, SITE_VARS)
 
+        category_list = cat_walker(page_list, SITE_VARS)
 
-    category_list = cat_walker(page_list, SITE_VARS)
+        ar_dict = archive_article_walker(page_list, SITE_VARS)
 
-    ar_dict = archive_article_walker(page_list, SITE_VARS)
+        # Add vars to SITE_VARS
+        SITE_VARS['siteTags'] = tag_list
+        SITE_VARS['siteCategories'] = category_list
+        SITE_VARS['siteArticleArchive'] = ar_dict
 
-    # Add vars to SITE_VARS
-    SITE_VARS['siteTags'] = tag_list
-    SITE_VARS['siteCategories'] = category_list
-    SITE_VARS['siteArticleArchive'] = ar_dict
     SITE_VARS['sitePages'] = gen_page_types(page_list)
     SITE_VARS['sitePages']['all'] = page_list
 
@@ -1024,27 +1020,28 @@ def build_site():
     if (SITE_VARS['siteGenLunrJson']):
         genLunrJson(SITE_VARS['sitePages']['all'])
 
+    if SITE_VARS['blogMode']:
+        if len(SITE_VARS['siteTags']) > 0:
+            # Write individual tag pages
+            for t in SITE_VARS['siteTags']:
+                write_page(t)
 
-    if len(SITE_VARS['siteTags']) > 0:
-        # Write individual tag pages
-        for t in SITE_VARS['siteTags']:
-            write_page(t)
-
-        # Write the tag index page
-        write_page(gen_tag_index())
+            # Write the tag index page
+            write_page(gen_tag_index())
 
 
     # Only generate if there are categories to write.
-    if len(SITE_VARS['siteCategories']) > 0:
-        # Write the category pages
-        for c in SITE_VARS['siteCategories']:
-            write_page(c)
+    if SITE_VARS['blogMode']:
+        if len(SITE_VARS['siteCategories']) > 0:
+            # Write the category pages
+            for c in SITE_VARS['siteCategories']:
+                write_page(c)
 
-        # Category index page
-        write_page(gen_cat_index())
+            # Category index page
+            write_page(gen_cat_index())
 
-    # Archive pages
-    write_archive_pages(SITE_VARS['siteArticleArchive'])
+            # Archive pages
+            write_archive_pages(SITE_VARS['siteArticleArchive'])
 
     # Tell the user we're done
     print("Done!")

@@ -19,14 +19,19 @@
 siteAuthor: Your Name Here
 siteDefaultKeywords: default, key, words, here
 siteDescription: Enter a default description here.
-siteGenLunrJson: false
 siteName: Your site name here
+
+# This feature is not available yet!
+siteGenLunrJson: false
 
 # Don't change this unless you know what you're doing.
 siteRoot: /
 
-# Can be either 'number' or 'alpha'
+# Can be either 'number' or 'alpha'.
 siteTagSort: number
 
-# Can be either 'number' or 'alpha'
+# Can be either 'number' or 'alpha'.
 siteCategorySort: number
+
+# Generate tag, category, and archive pages.
+blogMode: true
