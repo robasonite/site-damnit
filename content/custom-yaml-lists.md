@@ -1,5 +1,5 @@
 ---
-title: Custom YAML lists
+title: YAML lists
 date: 2020-08-19 01:01:01
 custom-list:
   - apples
@@ -9,15 +9,18 @@ custom-list:
 
 This is a demo page to test (and hopefully show off!) the ability to add custom YAML to your front matter.
 
-## Raw HTML
+<br/>
+
+**Raw HTML**
 
 <ul>
 {{#custom-list}}
   <li>{{name}}</li>
 {{/custom-list}}
 </ul>
+<br/>
 
-## Markdown
+**Markdown**
 
 {{#custom-list}}
 * {{name}}
