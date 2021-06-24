@@ -32,8 +32,8 @@ from datetime import datetime
 VERSION = """Site Damnit v0.0.4
 Copyright 2020 Robert Kight
 
-This software is made available under the terms and conditions of the MIT
-license. See LICENSE file for details.
+This program is free and open source software released under the GNU GPLv3.
+See COPYING for full license text.
 """
 
 
